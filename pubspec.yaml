@@ -1,0 +1,94 @@
+name: sonexa
+description: "SONEXA Music Player"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+
+  # Audio Player
+  just_audio: ^0.10.5
+
+  # Background Audio
+  audio_service: ^0.18.18
+
+  # Local Storage
+  shared_preferences: ^2.5.3
+
+  # Image Picker
+  image_picker: ^1.1.2
+
+  # Image Cropper
+  image_cropper: ^10.0.0
+
+  # Biometric Authentication
+  local_auth: ^2.3.0
+
+  # Permissions
+  permission_handler: ^12.0.3
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+  # App Icon
+  flutter_launcher_icons: ^0.14.4
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/sonexa_logo.png
+    - assets/images/hero.logo.png
+    - assets/images/galaxy_hero.png
+    - assets/images/headphone_hero.png
+    - assets/images/google_logo.png
+    - assets/images/apple_logo.png
+
+    - assets/images/artists/arijit_singh.jpg
+    - assets/images/artists/rahat_fateh_ali_khan.jpg
+    - assets/images/artists/mohit_chauhan.jpg
+    - assets/images/artists/atif_aslam.jpg
+    - assets/images/artists/javed_bashir.jpg
+
+    - assets/images/kesariya.jpg
+    - assets/images/hawayein.jpg
+    - assets/images/pee_loon.jpg
+    - assets/images/mast_magan.jpg
+    - assets/images/dagabaaz_re.jpg
+    - assets/images/tum_jo_aaye.jpg
+    - assets/images/janam_janam.jpg
+    - assets/images/tu_jaane_na.jpg
+    - assets/images/ye_tune_kya_kiya.jpg
+    - assets/images/tera_deedar_hua.jpg
+
+    - assets/audio/kesariya.mp3
+    - assets/audio/hawayein.mp3
+    - assets/audio/pee_loon.mp3
+    - assets/audio/mast_magan.mp3
+    - assets/audio/dagabaaz_re.mp3
+    - assets/audio/tum_jo_aaye.mp3
+    - assets/audio/janam_janam.mp3
+    - assets/audio/tu_jaane_na.mp3
+    - assets/audio/ye_tune_kya_kiya.mp3
+    - assets/audio/tera_deedar_hua.mp3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/sonexa_logo.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#000000"
+  adaptive_icon_foreground: "assets/images/sonexa_logo.png"
