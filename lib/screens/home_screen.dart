@@ -606,29 +606,33 @@ class _HomeScreenState extends State<HomeScreen>
           backgroundColor: backgroundColor,
           body: SafeArea(
             bottom: false,
-            child: CustomScrollView(
-              physics: const BouncingScrollPhysics(),
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    16,
-                    16,
-                    140,
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _buildHeader(
+                    context,
+                    isDark,
+                    primaryText,
+                    secondaryText,
+                    borderColor,
                   ),
+                ),
+                const SizedBox(height: 18),
+                Expanded(
+                  child: CustomScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    slivers: [
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(
+                          16,
+                          0,
+                          16,
+                          140,
+                        ),
                   sliver: SliverList(
                     delegate: SliverChildListDelegate(
                       [
-                        _buildHeader(
-                          context,
-                          isDark,
-                          primaryText,
-                          secondaryText,
-                          borderColor,
-                        ),
-
-                        const SizedBox(height: 18),
-
                         _buildHero(context),
 
                         const SizedBox(height: 18),
@@ -804,6 +808,9 @@ class _HomeScreenState extends State<HomeScreen>
                         const SizedBox(height: 10),
                       ],
                     ),
+                  ),
+                ),
+                    ],
                   ),
                 ),
               ],

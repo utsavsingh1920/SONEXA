@@ -118,25 +118,28 @@ class _LibraryScreenState extends State<LibraryScreen> {
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         bottom: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
+        child: Column(
+          children: [
             // ====================================================
-            // HEADER
+            // FIXED HEADER
             // ====================================================
-
-            SliverPadding(
+            Padding(
               padding: const EdgeInsets.fromLTRB(
                 16,
                 16,
                 16,
                 0,
               ),
-              sliver: SliverToBoxAdapter(
-                child: _buildHeader(context),
-              ),
+              child: _buildHeader(context),
             ),
 
+            // ====================================================
+            // SCROLLABLE CONTENT
+            // ====================================================
+            Expanded(
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
             // ====================================================
             // FILTERS
             // ====================================================
@@ -281,6 +284,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
             const SliverToBoxAdapter(
               child: SizedBox(height: 140),
+            ),
+                ],
+              ),
             ),
           ],
         ),

@@ -684,53 +684,47 @@ class _SettingsScreenState extends State<SettingsScreen> {
           theme.scaffoldBackgroundColor,
 
       body: SafeArea(
-        child: ListView(
-          physics:
-              const BouncingScrollPhysics(),
-
-          // FINAL UI SPACING
-          // Same overall spacing system as Home / Library.
-          padding: const EdgeInsets.fromLTRB(
-            16,
-            16,
-            16,
-            140,
-          ),
-
+        child: Column(
           children: [
             // =================================================================
-            // HEADER
+            // FIXED HEADER
             // =================================================================
 
-            Text(
-              'Settings',
-              style: TextStyle(
-                color: theme.colorScheme.onSurface,
-                fontSize: 30,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.5,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                0,
               ),
-            ),
-
-            const SizedBox(
-              height: 6,
-            ),
-
-            Text(
-              'Customize your SONEXA experience',
-              style: TextStyle(
-                color:
-                    theme.colorScheme.onSurface.withValues(
-                  alpha: 0.48,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Settings',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSurface,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-                fontSize: 13,
               ),
             ),
 
-            const SizedBox(
-              height: 28,
-            ),
+            // =================================================================
+            // SCROLLABLE SETTINGS CONTENT
+            // =================================================================
 
+            Expanded(
+              child: ListView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  28,
+                  16,
+                  140,
+                ),
+                children: [
             // =================================================================
             // ACCOUNT
             // =================================================================
@@ -1145,6 +1139,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       fontSize: 10.5,
                     ),
                   ),
+                ],
+              ),
+            ),
                 ],
               ),
             ),
@@ -1883,4 +1880,3 @@ class _LogoutButton extends StatelessWidget {
     );
   }
 }
-

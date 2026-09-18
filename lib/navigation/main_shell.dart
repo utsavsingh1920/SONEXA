@@ -346,7 +346,7 @@ class _MainShellState extends State<MainShell> {
 
                     Container(
                       height: 54,
-                      width: double.infinity,
+                      width: MediaQuery.sizeOf(context).width - 16,
 
                       padding:
                           const EdgeInsets.symmetric(

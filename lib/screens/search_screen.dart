@@ -676,44 +676,47 @@ class _SearchScreenState extends State<SearchScreen> {
             theme.scaffoldBackgroundColor,
 
         body: SafeArea(
-          child: ListView(
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior
-                    .onDrag,
-
-            physics:
-                const BouncingScrollPhysics(),
-
-            padding:
-                EdgeInsets.fromLTRB(
-              16,
-              18,
-              16,
-              bottomPadding,
-            ),
-
+          child: Column(
             children: [
               // ==================================================
-              // TITLE
+              // FIXED HEADER - DOES NOT SCROLL
               // ==================================================
-
-              Text(
-                'Search',
-                textAlign:
-                    TextAlign.left,
-                style: TextStyle(
-                  color: textColor,
-                  fontSize: 27,
-                  fontWeight:
-                      FontWeight.w800,
-                  letterSpacing: -0.7,
+              Container(
+                width: double.infinity,
+                color: theme.scaffoldBackgroundColor,
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  18,
+                  16,
+                  10,
+                ),
+                child: Text(
+                  'Search',
+                  textAlign: TextAlign.left,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 27,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.7,
+                  ),
                 ),
               ),
 
-              const SizedBox(
-                height: 10,
-              ),
-
+              // ==================================================
+              // SCROLLABLE SEARCH CONTENT
+              // ==================================================
+              Expanded(
+                child: ListView(
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  physics: const BouncingScrollPhysics(),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    0,
+                    16,
+                    bottomPadding,
+                  ),
+                  children: [
               // ==================================================
               // SEARCH BOX
               // ==================================================
@@ -1164,6 +1167,9 @@ class _SearchScreenState extends State<SearchScreen> {
                     );
                   },
                 ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),

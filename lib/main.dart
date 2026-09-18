@@ -7,6 +7,7 @@ import 'theme/theme_controller.dart';
 import 'player/player_controller.dart';
 import 'player/player_scope.dart';
 
+import 'screens/splash_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/biometric_lock_wrapper.dart';
 import 'navigation/main_shell.dart';
@@ -14,8 +15,7 @@ import 'navigation/main_shell.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final PlayerController playerController =
-      PlayerController();
+  final PlayerController playerController = PlayerController();
 
   await ThemeController.instance.load();
 
@@ -57,12 +57,12 @@ class SonexaApp extends StatelessWidget {
           ) {
             return PlayerScope(
               controller: playerController,
-              child: child ??
-                  const SizedBox.shrink(),
+              child: child ?? const SizedBox.shrink(),
             );
           },
 
-          home: const AuthGate(),
+          // App always starts with SONEXA splash.
+          home: const SplashScreen(),
         );
       },
     );
@@ -71,6 +71,7 @@ class SonexaApp extends StatelessWidget {
 
 // ============================================================
 // AUTH GATE
+// Checks whether user is already logged in.
 // ============================================================
 
 class AuthGate extends StatefulWidget {
@@ -109,29 +110,20 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   Widget build(BuildContext context) {
+    // Auth checking
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF080812),
-        body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF9B6BFF),
-          ),
-        ),
+        backgroundColor: Color(0xFF07070D),
+        body: SizedBox.expand(),
       );
     }
 
-    // ----------------------------------------------------------
-    // LOGGED OUT
-    // ----------------------------------------------------------
-
+    // User is NOT logged in
     if (!_isLoggedIn) {
       return const LoginScreen();
     }
 
-    // ----------------------------------------------------------
-    // LOGGED IN
-    // ----------------------------------------------------------
-
+    // User is already logged in
     return const BiometricLockWrapper(
       child: MainShell(),
     );
