@@ -75,8 +75,19 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
+    final bool isDark =
+        Theme.of(context).brightness == Brightness.dark;
+
+    final Color primaryText =
+        isDark ? Colors.white : const Color(0xFF17121F);
+    final Color softText =
+        isDark ? const Color(0xFFE2CFFF) : const Color(0xFF4E3D61);
+    final Color taglineText =
+        isDark ? const Color(0xFFD5B6FF) : const Color(0xFF6F548A);
+
     return Scaffold(
-      backgroundColor: const Color(0xFF05050B),
+      backgroundColor:
+          isDark ? const Color(0xFF05050B) : const Color(0xFFF8F5FC),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final double w = constraints.maxWidth;
@@ -89,17 +100,23 @@ class _SplashScreenState extends State<SplashScreen>
               // BACKGROUND
               // ==================================================
 
-              const DecoratedBox(
+              DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: RadialGradient(
-                    center: Alignment(0.0, -0.02),
+                    center: const Alignment(0.0, -0.02),
                     radius: 1.0,
-                    colors: [
-                      Color(0xFF140629),
-                      Color(0xFF090611),
-                      Color(0xFF05050B),
-                    ],
-                    stops: [0.0, 0.50, 1.0],
+                    colors: isDark
+                        ? const [
+                            Color(0xFF140629),
+                            Color(0xFF090611),
+                            Color(0xFF05050B),
+                          ]
+                        : const [
+                            Color(0xFFF0E6FF),
+                            Color(0xFFF8F5FC),
+                            Color(0xFFFFFFFF),
+                          ],
+                    stops: const [0.0, 0.50, 1.0],
                   ),
                 ),
               ),
@@ -108,16 +125,16 @@ class _SplashScreenState extends State<SplashScreen>
               // BACKGROUND CURVES
               // ==================================================
 
-              const CustomPaint(
-                painter: BackgroundCurvePainter(),
+              CustomPaint(
+                painter: BackgroundCurvePainter(isDark: isDark),
               ),
 
               // ==================================================
               // SUBTLE PARTICLES
               // ==================================================
 
-              const CustomPaint(
-                painter: ParticlePainter(),
+              CustomPaint(
+                painter: ParticlePainter(isDark: isDark),
               ),
 
               // ==================================================
@@ -133,7 +150,7 @@ class _SplashScreenState extends State<SplashScreen>
                     Text(
                       'M O R E\nT H A N\nM U S I C',
                       style: TextStyle(
-                        color: const Color(0xFFE2CFFF),
+                        color: softText,
                         fontSize: w * 0.030,
                         height: 1.75,
                         fontWeight: FontWeight.w400,
@@ -229,7 +246,7 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Text(
                             'SONEXA',
                             style: TextStyle(
-                              color: Colors.white,
+                              color: primaryText,
                               fontSize: w * 0.105,
                               fontWeight: FontWeight.w700,
                               letterSpacing: w * 0.013,
@@ -247,7 +264,7 @@ class _SplashScreenState extends State<SplashScreen>
                         Text(
                           'Feel Every Beat',
                           style: TextStyle(
-                            color: const Color(0xFFD5B6FF),
+                            color: taglineText,
                             fontSize: w * 0.035,
                             fontWeight: FontWeight.w400,
                             letterSpacing: w * 0.010,
@@ -300,8 +317,8 @@ class _SplashScreenState extends State<SplashScreen>
                 top: h * 0.605,
                 child: SizedBox(
                   height: h * 0.13,
-                  child: const CustomPaint(
-                    painter: MusicWavePainter(),
+                  child: CustomPaint(
+                    painter: MusicWavePainter(isDark: isDark),
                   ),
                 ),
               ),
@@ -318,7 +335,7 @@ class _SplashScreenState extends State<SplashScreen>
                   padding: EdgeInsets.symmetric(
                     horizontal: w * 0.075,
                   ),
-                  child: const FittedBox(
+                  child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -394,8 +411,10 @@ class SplashWord extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: const TextStyle(
-        color: Color(0xFFE4D1FF),
+      style: TextStyle(
+        color: Theme.of(context).brightness == Brightness.dark
+            ? const Color(0xFFE4D1FF)
+            : const Color(0xFF4E3D61),
         fontSize: 10,
         fontWeight: FontWeight.w500,
         letterSpacing: 2.5,
@@ -430,7 +449,11 @@ class SplashDot extends StatelessWidget {
 // ============================================================
 
 class BackgroundCurvePainter extends CustomPainter {
-  const BackgroundCurvePainter();
+  final bool isDark;
+
+  const BackgroundCurvePainter({
+    required this.isDark,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -461,15 +484,21 @@ class BackgroundCurvePainter extends CustomPainter {
     );
 
     final Paint topPlanet = Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(-0.8, 0.8),
+      ..shader = RadialGradient(
+        center: const Alignment(-0.8, 0.8),
         radius: 1.1,
-        colors: [
-          Color(0xFF5B21B6),
-          Color(0xFF25085A),
-          Color(0xFF0B0616),
-        ],
-        stops: [0.0, 0.55, 1.0],
+        colors: isDark
+            ? const [
+                Color(0xFF5B21B6),
+                Color(0xFF25085A),
+                Color(0xFF0B0616),
+              ]
+            : const [
+                Color(0xFFC7A5FF),
+                Color(0xFFE7D8FF),
+                Color(0xFFF8F3FF),
+              ],
+        stops: const [0.0, 0.55, 1.0],
       ).createShader(topRect);
 
     canvas.drawCircle(
@@ -536,15 +565,21 @@ class BackgroundCurvePainter extends CustomPainter {
     );
 
     final Paint bottomPlanet = Paint()
-      ..shader = const RadialGradient(
-        center: Alignment(0.8, -0.7),
+      ..shader = RadialGradient(
+        center: const Alignment(0.8, -0.7),
         radius: 1.15,
-        colors: [
-          Color(0xFF3B0B84),
-          Color(0xFF1D063E),
-          Color(0xFF08050F),
-        ],
-        stops: [0.0, 0.60, 1.0],
+        colors: isDark
+            ? const [
+                Color(0xFF3B0B84),
+                Color(0xFF1D063E),
+                Color(0xFF08050F),
+              ]
+            : const [
+                Color(0xFFD6BCFF),
+                Color(0xFFEBDDFF),
+                Color(0xFFFBF8FF),
+              ],
+        stops: const [0.0, 0.60, 1.0],
       ).createShader(bottomRect);
 
     canvas.drawCircle(
@@ -598,13 +633,17 @@ class BackgroundCurvePainter extends CustomPainter {
 // ============================================================
 
 class ParticlePainter extends CustomPainter {
-  const ParticlePainter();
+  final bool isDark;
+
+  const ParticlePainter({
+    required this.isDark,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final Paint glowPaint = Paint()
       ..color = const Color(0xFF8B5CF6)
-          .withValues(alpha: 0.45)
+          .withValues(alpha: isDark ? 0.45 : 0.32)
       ..maskFilter = const MaskFilter.blur(
         BlurStyle.normal,
         5,
@@ -612,7 +651,7 @@ class ParticlePainter extends CustomPainter {
 
     final Paint dotPaint = Paint()
       ..color = const Color(0xFF8B5CF6)
-          .withValues(alpha: 0.70);
+          .withValues(alpha: isDark ? 0.70 : 0.62);
 
     final List<Offset> dots = [
       Offset(size.width * 0.81, size.height * 0.17),
@@ -664,7 +703,11 @@ class ParticlePainter extends CustomPainter {
 // ============================================================
 
 class MusicWavePainter extends CustomPainter {
-  const MusicWavePainter();
+  final bool isDark;
+
+  const MusicWavePainter({
+    required this.isDark,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -712,7 +755,7 @@ class MusicWavePainter extends CustomPainter {
       final Paint thinPaint = Paint()
         ..color = const Color(0xFF7C3AED)
             .withValues(
-          alpha: 0.12 + i * 0.012,
+          alpha: (isDark ? 0.12 : 0.18) + i * 0.012,
         )
         ..style = PaintingStyle.stroke
         ..strokeWidth = 0.7;
@@ -775,15 +818,24 @@ class MusicWavePainter extends CustomPainter {
     // ==========================================================
 
     final Paint mainPaint = Paint()
-      ..shader = const LinearGradient(
-        colors: [
-          Color(0xFF7C3AED),
-          Color(0xFFA855F7),
-          Color(0xFFE9D5FF),
-          Colors.white,
-          Color(0xFFB66CFF),
-          Color(0xFF7C3AED),
-        ],
+      ..shader = LinearGradient(
+        colors: isDark
+            ? const [
+                Color(0xFF7C3AED),
+                Color(0xFFA855F7),
+                Color(0xFFE9D5FF),
+                Colors.white,
+                Color(0xFFB66CFF),
+                Color(0xFF7C3AED),
+              ]
+            : const [
+                Color(0xFF6D28D9),
+                Color(0xFF9333EA),
+                Color(0xFF7C3AED),
+                Color(0xFF5B21B6),
+                Color(0xFF9333EA),
+                Color(0xFF6D28D9),
+              ],
       ).createShader(
         Rect.fromLTWH(
           0,
