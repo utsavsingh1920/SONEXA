@@ -48,3 +48,12 @@ app.*.map.json
 .widget_preview/
 /assets/audio/
 release/*.apk
+
+# Local backup files
+*_backup.txt
+search_screen_backup.txt
+song_model_backup.txt
+
+# Local release APKs
+release/
+*.apk

@@ -692,9 +692,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
             Padding(
               padding: const EdgeInsets.fromLTRB(
+                10,
                 16,
-                16,
-                16,
+                10,
                 0,
               ),
               child: Align(
@@ -719,9 +719,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
               child: ListView(
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(
-                  16,
+                  10,
                   28,
-                  16,
+                  10,
                   140,
                 ),
                 children: [

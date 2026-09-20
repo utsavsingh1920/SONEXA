@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -12,24 +13,26 @@ class PlayerController extends ChangeNotifier {
   // STORAGE KEYS
   // ============================================================
 
-  static const String _likedSongsKey =
-      'sonexa_liked_song_ids';
+  static const String _likedSongsKey = 'sonexa_liked_song_ids';
 
-  static const String _recentlyPlayedKey =
-      'sonexa_recently_played_song_ids';
+  static const String _recentlyPlayedKey = 'sonexa_recently_played_song_ids';
 
-  static const String _queueKey =
-      'sonexa_queue_song_ids';
+  static const String _queueKey = 'sonexa_queue_song_ids';
 
-  static const String _playlistNamesKey =
-      'sonexa_playlist_names';
+  static const String _playlistNamesKey = 'sonexa_playlist_names';
 
-  static const String _playlistPrefix =
-      'sonexa_playlist_';
+  static const String _playlistPrefix = 'sonexa_playlist_';
+
+  static const String _savedAlbumNamesKey = 'sonexa_saved_album_names';
+
+  static const String _savedAlbumPrefix = 'sonexa_saved_album_';
+
+  static const String _savedArtistNamesKey = 'sonexa_saved_artist_names';
+
+  static const String _savedArtistPrefix = 'sonexa_saved_artist_';
 
   // SettingsScreen already uses this exact key.
-  static const String _autoplayKey =
-      'settings_autoplay';
+  static const String _autoplayKey = 'settings_autoplay';
 
   // ============================================================
   // PERSISTENCE
@@ -41,47 +44,72 @@ class PlayerController extends ChangeNotifier {
 
   bool _stateChangedBeforeRestore = false;
 
-  Future<void> _pendingSave =
-      Future<void>.value();
+  Future<void> _pendingSave = Future<void>.value();
 
   // ============================================================
   // REAL AUDIO EQUALIZER
   // ============================================================
 
-  final AndroidEqualizer _equalizer =
-      AndroidEqualizer();
+  final AndroidEqualizer _equalizer = AndroidEqualizer();
 
-  AndroidEqualizer get equalizer =>
-      _equalizer;
+  AndroidEqualizer get equalizer => _equalizer;
 
   // ============================================================
   // AUDIO PLAYER
   // ============================================================
 
-  late final AudioPlayer _audioPlayer =
-      AudioPlayer(
+  late final AudioPlayer _audioPlayer = AudioPlayer(
     audioPipeline: AudioPipeline(
-      androidAudioEffects: <AndroidAudioEffect>[
-        _equalizer,
-      ],
+      androidAudioEffects: <AndroidAudioEffect>[_equalizer],
     ),
   );
 
-  StreamSubscription<Duration>?
-      _positionSubscription;
+  StreamSubscription<Duration>? _positionSubscription;
 
-  StreamSubscription<Duration?>?
-      _durationSubscription;
+  StreamSubscription<Duration?>? _durationSubscription;
 
-  StreamSubscription<PlayerState>?
-      _playerStateSubscription;
+  StreamSubscription<PlayerState>? _playerStateSubscription;
+
+  // Last successfully prepared source. Reopening the same song should not
+  // stop and download/buffer it again.
+  String? _loadedSongKey;
+  int _loadRequestId = 0;
 
   // ============================================================
   // SONG LIST
   // ============================================================
 
-  // allSongs is the single source of truth.
-  List<SongModel> get songs => allSongs;
+  final List<SongModel> _songs = List<SongModel>.from(allSongs);
+
+  List<SongModel> get songs => List<SongModel>.unmodifiable(_songs);
+
+  void setPlaybackSongs(List<SongModel> newSongs) {
+    if (newSongs.isEmpty) {
+      return;
+    }
+
+    final String? currentId =
+        _songs.isNotEmpty && currentIndex >= 0 && currentIndex < _songs.length
+        ? _songs[currentIndex].id
+        : null;
+
+    _songs
+      ..clear()
+      ..addAll(newSongs);
+
+    if (currentId != null) {
+      final int restoredIndex = _songs.indexWhere(
+        (SongModel song) => song.id == currentId,
+      );
+
+      currentIndex = restoredIndex >= 0 ? restoredIndex : 0;
+    } else {
+      currentIndex = 0;
+    }
+
+    _updateCurrentLikeState();
+    notifyListeners();
+  }
 
   // ============================================================
   // CURRENT SONG
@@ -91,30 +119,23 @@ class PlayerController extends ChangeNotifier {
 
   SongModel get currentSongData {
     if (songs.isEmpty) {
-      throw StateError(
-        'SONEXA has no songs.',
-      );
+      throw StateError('SONEXA has no songs.');
     }
 
-    if (currentIndex < 0 ||
-        currentIndex >= songs.length) {
+    if (currentIndex < 0 || currentIndex >= songs.length) {
       currentIndex = 0;
     }
 
     return songs[currentIndex];
   }
 
-  String get currentSong =>
-      currentSongData.title;
+  String get currentSong => currentSongData.title;
 
-  String get currentArtist =>
-      currentSongData.artist;
+  String get currentArtist => currentSongData.artist;
 
-  String get currentImage =>
-      currentSongData.imagePath;
+  String get currentImage => currentSongData.imagePath;
 
-  String get currentAudio =>
-      currentSongData.audioPath;
+  String get currentAudio => currentSongData.audioPath;
 
   // ============================================================
   // PLAYING STATE
@@ -157,16 +178,11 @@ class PlayerController extends ChangeNotifier {
   // LIKE STATE
   // ============================================================
 
-  final List<SongModel> _likedSongs =
-      <SongModel>[];
+  final List<SongModel> _likedSongs = <SongModel>[];
 
-  List<SongModel> get likedSongs =>
-      List<SongModel>.unmodifiable(
-        _likedSongs,
-      );
+  List<SongModel> get likedSongs => List<SongModel>.unmodifiable(_likedSongs);
 
-  int get likedSongsCount =>
-      _likedSongs.length;
+  int get likedSongsCount => _likedSongs.length;
 
   bool isLiked = false;
 
@@ -174,63 +190,60 @@ class PlayerController extends ChangeNotifier {
   // RECENTLY PLAYED
   // ============================================================
 
-  final List<SongModel> _recentlyPlayed =
-      <SongModel>[];
+  final List<SongModel> _recentlyPlayed = <SongModel>[];
 
   List<SongModel> get recentlyPlayed =>
-      List<SongModel>.unmodifiable(
-        _recentlyPlayed,
-      );
+      List<SongModel>.unmodifiable(_recentlyPlayed);
 
-  int get recentlyPlayedCount =>
-      _recentlyPlayed.length;
+  int get recentlyPlayedCount => _recentlyPlayed.length;
 
   // ============================================================
   // QUEUE
   // ============================================================
 
-  final List<SongModel> _queue =
-      <SongModel>[];
+  final List<SongModel> _queue = <SongModel>[];
 
-  List<SongModel> get queue =>
-      List<SongModel>.unmodifiable(
-        _queue,
-      );
+  List<SongModel> get queue => List<SongModel>.unmodifiable(_queue);
 
-  bool get hasQueue =>
-      _queue.isNotEmpty;
+  bool get hasQueue => _queue.isNotEmpty;
 
   // ============================================================
   // PLAYLISTS
   // ============================================================
 
-  final Map<String, List<SongModel>>
-      _playlists =
+  final Map<String, List<SongModel>> _playlists = <String, List<SongModel>>{};
+
+  List<String> get playlistNames => List<String>.unmodifiable(_playlists.keys);
+
+  // ============================================================
+  // SAVED ALBUMS / ARTISTS
+  // ============================================================
+
+  final Map<String, List<SongModel>> _savedAlbums = <String, List<SongModel>>{};
+
+  final Map<String, List<SongModel>> _savedArtists =
       <String, List<SongModel>>{};
 
-  List<String> get playlistNames =>
-      List<String>.unmodifiable(
-        _playlists.keys,
-      );
+  List<String> get savedAlbumNames =>
+      List<String>.unmodifiable(_savedAlbums.keys);
+
+  List<String> get savedArtistNames =>
+      List<String>.unmodifiable(_savedArtists.keys);
 
   // ============================================================
   // POSITION / DURATION
   // ============================================================
 
-  Duration position =
-      Duration.zero;
+  Duration position = Duration.zero;
 
-  Duration duration =
-      Duration.zero;
+  Duration duration = Duration.zero;
 
   double get progress {
     if (duration.inMilliseconds <= 0) {
       return 0.0;
     }
 
-    final double value =
-        position.inMilliseconds /
-            duration.inMilliseconds;
+    final double value = position.inMilliseconds / duration.inMilliseconds;
 
     return value.clamp(0.0, 1.0);
   }
@@ -242,9 +255,7 @@ class PlayerController extends ChangeNotifier {
   PlayerController() {
     _listenToAudio();
 
-    unawaited(
-      _initializeController(),
-    );
+    unawaited(_initializeController());
   }
 
   // ============================================================
@@ -257,11 +268,7 @@ class PlayerController extends ChangeNotifier {
     await _loadAutoplaySetting();
 
     if (songs.isNotEmpty) {
-      await _loadSong(
-        0,
-        autoPlay: false,
-        addToRecentlyPlayed: false,
-      );
+      await _loadSong(0, autoPlay: false, addToRecentlyPlayed: false);
     }
 
     _updateCurrentLikeState();
@@ -276,22 +283,15 @@ class PlayerController extends ChangeNotifier {
   Future<void> _loadAutoplaySetting() async {
     try {
       final SharedPreferences prefs =
-          _preferences ??
-              await SharedPreferences.getInstance();
+          _preferences ?? await SharedPreferences.getInstance();
 
       _preferences = prefs;
 
       await prefs.reload();
 
-      _autoplay =
-          prefs.getBool(
-                _autoplayKey,
-              ) ??
-              true;
+      _autoplay = prefs.getBool(_autoplayKey) ?? true;
     } catch (error) {
-      debugPrint(
-        'SONEXA Autoplay Load Error: $error',
-      );
+      debugPrint('SONEXA Autoplay Load Error: $error');
 
       // SettingsScreen also defaults to true.
       _autoplay = true;
@@ -318,8 +318,7 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> _restoreSavedData() async {
     try {
-      final SharedPreferences prefs =
-          await SharedPreferences.getInstance();
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
 
       _preferences = prefs;
 
@@ -335,127 +334,86 @@ class PlayerController extends ChangeNotifier {
       // LIKED SONGS
       // --------------------------------------------------------
 
-      final List<String> likedIds =
-          prefs.getStringList(
-                _likedSongsKey,
-              ) ??
-              <String>[];
+      final List<String> likedData =
+          prefs.getStringList(_likedSongsKey) ?? <String>[];
 
-      _likedSongs.clear();
-
-      for (final String id in likedIds) {
-        final SongModel? song =
-            findSongById(id);
-
-        if (song != null &&
-            !_likedSongs.any(
-              (SongModel item) =>
-                  item.id == song.id,
-            )) {
-          _likedSongs.add(song);
-        }
-      }
+      _likedSongs
+        ..clear()
+        ..addAll(_decodeSongs(likedData));
 
       // --------------------------------------------------------
       // RECENTLY PLAYED
       // --------------------------------------------------------
 
-      final List<String> recentIds =
-          prefs.getStringList(
-                _recentlyPlayedKey,
-              ) ??
-              <String>[];
+      final List<String> recentData =
+          prefs.getStringList(_recentlyPlayedKey) ?? <String>[];
 
-      _recentlyPlayed.clear();
-
-      for (final String id in recentIds) {
-        final SongModel? song =
-            findSongById(id);
-
-        if (song != null &&
-            !_recentlyPlayed.any(
-              (SongModel item) =>
-                  item.id == song.id,
-            )) {
-          _recentlyPlayed.add(song);
-        }
-      }
+      _recentlyPlayed
+        ..clear()
+        ..addAll(_decodeSongs(recentData));
 
       // --------------------------------------------------------
       // QUEUE
       // --------------------------------------------------------
 
-      final List<String> queueIds =
-          prefs.getStringList(
-                _queueKey,
-              ) ??
-              <String>[];
+      final List<String> queueData =
+          prefs.getStringList(_queueKey) ?? <String>[];
 
-      _queue.clear();
-
-      for (final String id in queueIds) {
-        final SongModel? song =
-            findSongById(id);
-
-        if (song != null &&
-            !_queue.any(
-              (SongModel item) =>
-                  item.id == song.id,
-            )) {
-          _queue.add(song);
-        }
-      }
+      _queue
+        ..clear()
+        ..addAll(_decodeSongs(queueData));
 
       // --------------------------------------------------------
       // PLAYLISTS
       // --------------------------------------------------------
 
       final List<String> savedPlaylistNames =
-          prefs.getStringList(
-                _playlistNamesKey,
-              ) ??
-              <String>[];
+          prefs.getStringList(_playlistNamesKey) ?? <String>[];
 
       _playlists.clear();
 
-      for (final String playlistName
-          in savedPlaylistNames) {
-        final String storageKey =
-            _playlistStorageKey(
-          playlistName,
+      for (final String playlistName in savedPlaylistNames) {
+        final String storageKey = _playlistStorageKey(playlistName);
+
+        final List<String> songData =
+            prefs.getStringList(storageKey) ?? <String>[];
+
+        _playlists[playlistName] = _decodeSongs(songData);
+      }
+
+      // --------------------------------------------------------
+      // SAVED ALBUMS
+      // --------------------------------------------------------
+
+      final List<String> savedAlbumNames =
+          prefs.getStringList(_savedAlbumNamesKey) ?? <String>[];
+
+      _savedAlbums.clear();
+
+      for (final String albumName in savedAlbumNames) {
+        _savedAlbums[albumName] = _decodeSongs(
+          prefs.getStringList(_albumStorageKey(albumName)) ?? <String>[],
         );
+      }
 
-        final List<String> songIds =
-            prefs.getStringList(
-                  storageKey,
-                ) ??
-                <String>[];
+      // --------------------------------------------------------
+      // SAVED ARTISTS
+      // --------------------------------------------------------
 
-        final List<SongModel> playlist =
-            <SongModel>[];
+      final List<String> savedArtistNames =
+          prefs.getStringList(_savedArtistNamesKey) ?? <String>[];
 
-        for (final String id in songIds) {
-          final SongModel? song =
-              findSongById(id);
+      _savedArtists.clear();
 
-          if (song != null &&
-              !playlist.any(
-                (SongModel item) =>
-                    item.id == song.id,
-              )) {
-            playlist.add(song);
-          }
-        }
-
-        _playlists[playlistName] =
-            playlist;
+      for (final String artistName in savedArtistNames) {
+        _savedArtists[artistName] = _decodeSongs(
+          prefs.getStringList(_artistStorageKey(artistName)) ?? <String>[],
+        );
       }
 
       _persistenceRestored = true;
     } catch (error) {
-      debugPrint(
-        'SONEXA Restore Error: $error',
-      );
+      debugPrint('SONEXA Restore Error: $error');
 
       _persistenceRestored = true;
     }
@@ -478,9 +436,7 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   void _schedulePersist() {
-    _pendingSave = _pendingSave.then(
-      (_) => _persistAll(),
-    );
+    _pendingSave = _pendingSave.then((_) => _persistAll());
   }
 
   // ============================================================
@@ -488,8 +444,7 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   Future<void> _persistAll() async {
-    final SharedPreferences? prefs =
-        _preferences;
+    final SharedPreferences? prefs = _preferences;
 
     if (prefs == null) {
       return;
@@ -500,14 +455,7 @@ class PlayerController extends ChangeNotifier {
       // LIKES
       // --------------------------------------------------------
 
-      await prefs.setStringList(
-        _likedSongsKey,
-        _likedSongs
-            .map(
-              (SongModel song) => song.id,
-            )
-            .toList(),
-      );
+      await prefs.setStringList(_likedSongsKey, _encodeSongs(_likedSongs));
 
       // --------------------------------------------------------
       // RECENTLY PLAYED
@@ -515,63 +463,38 @@ class PlayerController extends ChangeNotifier {
 
       await prefs.setStringList(
         _recentlyPlayedKey,
-        _recentlyPlayed
-            .map(
-              (SongModel song) => song.id,
-            )
-            .toList(),
+        _encodeSongs(_recentlyPlayed),
       );
 
       // --------------------------------------------------------
       // QUEUE
       // --------------------------------------------------------
 
-      await prefs.setStringList(
-        _queueKey,
-        _queue
-            .map(
-              (SongModel song) => song.id,
-            )
-            .toList(),
-      );
+      await prefs.setStringList(_queueKey, _encodeSongs(_queue));
 
       // --------------------------------------------------------
       // PLAYLIST NAMES
       // --------------------------------------------------------
 
-      await prefs.setStringList(
-        _playlistNamesKey,
-        _playlists.keys.toList(),
-      );
+      await prefs.setStringList(_playlistNamesKey, _playlists.keys.toList());
 
       // --------------------------------------------------------
       // REMOVE OLD PLAYLIST DATA
       // --------------------------------------------------------
 
-      final Set<String> currentKeys =
-          <String>{
-        for (final String name
-            in _playlists.keys)
-          _playlistStorageKey(name),
+      final Set<String> currentKeys = <String>{
+        for (final String name in _playlists.keys) _playlistStorageKey(name),
       };
 
-      final Set<String> oldKeys =
-          prefs
-              .getKeys()
-              .where(
-                (String key) =>
-                    key.startsWith(
-                      _playlistPrefix,
-                    ) &&
-                    key !=
-                        _playlistNamesKey,
-              )
-              .toSet();
+      final Set<String> oldKeys = prefs
+          .getKeys()
+          .where(
+            (String key) =>
+                key.startsWith(_playlistPrefix) && key != _playlistNamesKey,
+          )
+          .toSet();
 
-      for (final String oldKey
-          in oldKeys.difference(
-        currentKeys,
-      )) {
+      for (final String oldKey in oldKeys.difference(currentKeys)) {
         await prefs.remove(oldKey);
       }
 
@@ -579,24 +502,62 @@ class PlayerController extends ChangeNotifier {
       // SAVE EACH PLAYLIST
       // --------------------------------------------------------
 
-      for (final MapEntry<String,
-              List<SongModel>> entry
+      for (final MapEntry<String, List<SongModel>> entry
           in _playlists.entries) {
         await prefs.setStringList(
-          _playlistStorageKey(
-            entry.key,
-          ),
-          entry.value
-              .map(
-                (SongModel song) => song.id,
-              )
-              .toList(),
+          _playlistStorageKey(entry.key),
+          _encodeSongs(entry.value),
+        );
+      }
+
+      // --------------------------------------------------------
+      // SAVED ALBUMS / ARTISTS
+      // --------------------------------------------------------
+
+      await prefs.setStringList(
+        _savedAlbumNamesKey,
+        _savedAlbums.keys.toList(),
+      );
+      await prefs.setStringList(
+        _savedArtistNamesKey,
+        _savedArtists.keys.toList(),
+      );
+
+      await _removeUnusedCollectionKeys(
+        prefs,
+        prefix: _savedAlbumPrefix,
+        namesKey: _savedAlbumNamesKey,
+        currentKeys: <String>{
+          for (final String name in _savedAlbums.keys) _albumStorageKey(name),
+        },
+      );
+
+      await _removeUnusedCollectionKeys(
+        prefs,
+        prefix: _savedArtistPrefix,
+        namesKey: _savedArtistNamesKey,
+        currentKeys: <String>{
+          for (final String name in _savedArtists.keys) _artistStorageKey(name),
+        },
+      );
+
+      for (final MapEntry<String, List<SongModel>> entry
+          in _savedAlbums.entries) {
+        await prefs.setStringList(
+          _albumStorageKey(entry.key),
+          _encodeSongs(entry.value),
+        );
+      }
+
+      for (final MapEntry<String, List<SongModel>> entry
+          in _savedArtists.entries) {
+        await prefs.setStringList(
+          _artistStorageKey(entry.key),
+          _encodeSongs(entry.value),
         );
       }
     } catch (error) {
-      debugPrint(
-        'SONEXA Persistence Error: $error',
-      );
+      debugPrint('SONEXA Persistence Error: $error');
     }
   }
 
@@ -604,10 +565,65 @@ class PlayerController extends ChangeNotifier {
   // STORAGE - PLAYLIST KEY
   // ============================================================
 
-  String _playlistStorageKey(
-    String playlistName,
-  ) {
+  String _playlistStorageKey(String playlistName) {
     return '$_playlistPrefix$playlistName';
+  }
+
+  String _albumStorageKey(String albumName) {
+    return '$_savedAlbumPrefix$albumName';
+  }
+
+  String _artistStorageKey(String artistName) {
+    return '$_savedArtistPrefix$artistName';
+  }
+
+  List<String> _encodeSongs(Iterable<SongModel> songsToEncode) {
+    return songsToEncode
+        .map((SongModel song) => jsonEncode(song.toJson()))
+        .toList();
+  }
+
+  List<SongModel> _decodeSongs(List<String> values) {
+    final List<SongModel> decodedSongs = <SongModel>[];
+    final Set<String> keys = <String>{};
+
+    for (final String value in values) {
+      SongModel? song;
+
+      try {
+        final dynamic decoded = jsonDecode(value);
+        if (decoded is Map) {
+          song = SongModel.fromJson(Map<String, dynamic>.from(decoded));
+        }
+      } catch (_) {
+        // Backward compatibility for the older ID-only storage format.
+        song = findSongById(value);
+      }
+
+      song ??= findSongById(value);
+
+      if (song != null && keys.add('${song.source}:${song.id}')) {
+        decodedSongs.add(song);
+      }
+    }
+
+    return decodedSongs;
+  }
+
+  Future<void> _removeUnusedCollectionKeys(
+    SharedPreferences prefs, {
+    required String prefix,
+    required String namesKey,
+    required Set<String> currentKeys,
+  }) async {
+    final Set<String> oldKeys = prefs
+        .getKeys()
+        .where((String key) => key.startsWith(prefix) && key != namesKey)
+        .toSet();
+
+    for (final String oldKey in oldKeys.difference(currentKeys)) {
+      await prefs.remove(oldKey);
+    }
   }
 
   // ============================================================
@@ -615,55 +631,48 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   void _listenToAudio() {
-    _positionSubscription =
-        _audioPlayer.positionStream.listen(
-      (Duration newPosition) {
-        position = newPosition;
-        notifyListeners();
-      },
-    );
+    _positionSubscription = _audioPlayer.positionStream.listen((
+      Duration newPosition,
+    ) {
+      position = newPosition;
+      notifyListeners();
+    });
 
-    _durationSubscription =
-        _audioPlayer.durationStream.listen(
-      (Duration? newDuration) {
-        duration =
-            newDuration ?? Duration.zero;
+    _durationSubscription = _audioPlayer.durationStream.listen((
+      Duration? newDuration,
+    ) {
+      duration = newDuration ?? Duration.zero;
 
-        notifyListeners();
-      },
-    );
+      notifyListeners();
+    });
 
-    _playerStateSubscription =
-        _audioPlayer.playerStateStream.listen(
-      (PlayerState state) {
-        isPlaying = state.playing;
+    _playerStateSubscription = _audioPlayer.playerStateStream.listen((
+      PlayerState state,
+    ) {
+      isPlaying = state.playing;
 
-        // ======================================================
-        // AUTOPLAY
-        // ======================================================
-        //
-        // This triggers ONLY when the current audio has
-        // actually reached the completed state.
-        //
-        // Autoplay ON:
-        //   -> automatically play next song
-        //
-        // Autoplay OFF:
-        //   -> stop and keep the current song selected
-        //
-        // Manual Next/Previous are NOT controlled by this.
-        // ======================================================
+      // ======================================================
+      // AUTOPLAY
+      // ======================================================
+      //
+      // This triggers ONLY when the current audio has
+      // actually reached the completed state.
+      //
+      // Autoplay ON:
+      //   -> automatically play next song
+      //
+      // Autoplay OFF:
+      //   -> stop and keep the current song selected
+      //
+      // Manual Next/Previous are NOT controlled by this.
+      // ======================================================
 
-        if (state.processingState ==
-            ProcessingState.completed) {
-          unawaited(
-            _handleSongCompleted(),
-          );
-        }
+      if (state.processingState == ProcessingState.completed) {
+        unawaited(_handleSongCompleted());
+      }
 
-        notifyListeners();
-      },
-    );
+      notifyListeners();
+    });
   }
 
   // ============================================================
@@ -678,8 +687,7 @@ class PlayerController extends ChangeNotifier {
     _handlingCompletion = true;
 
     try {
-      final bool shouldAutoplay =
-          await _isAutoplayEnabled();
+      final bool shouldAutoplay = await _isAutoplayEnabled();
 
       if (!shouldAutoplay) {
         // Autoplay OFF:
@@ -696,9 +704,7 @@ class PlayerController extends ChangeNotifier {
       // Move to the next song automatically.
       await nextSong();
     } catch (error) {
-      debugPrint(
-        'SONEXA Autoplay Error: $error',
-      );
+      debugPrint('SONEXA Autoplay Error: $error');
     } finally {
       _handlingCompletion = false;
     }
@@ -711,24 +717,17 @@ class PlayerController extends ChangeNotifier {
   Future<bool> _isAutoplayEnabled() async {
     try {
       final SharedPreferences prefs =
-          _preferences ??
-              await SharedPreferences.getInstance();
+          _preferences ?? await SharedPreferences.getInstance();
 
       _preferences = prefs;
 
       await prefs.reload();
 
-      _autoplay =
-          prefs.getBool(
-                _autoplayKey,
-              ) ??
-              true;
+      _autoplay = prefs.getBool(_autoplayKey) ?? true;
 
       return _autoplay;
     } catch (error) {
-      debugPrint(
-        'SONEXA Autoplay Read Error: $error',
-      );
+      debugPrint('SONEXA Autoplay Read Error: $error');
 
       return _autoplay;
     }
@@ -747,10 +746,14 @@ class PlayerController extends ChangeNotifier {
       return;
     }
 
-    if (index < 0 ||
-        index >= songs.length) {
+    if (index < 0 || index >= songs.length) {
       return;
     }
+
+    final int requestId = ++_loadRequestId;
+    final SongModel selectedSong = songs[index];
+    final String selectedSongKey =
+        '${selectedSong.source}:${selectedSong.id}:${selectedSong.audioPath}';
 
     currentIndex = index;
 
@@ -774,33 +777,53 @@ class PlayerController extends ChangeNotifier {
     _updateCurrentLikeState();
 
     if (addToRecentlyPlayed) {
-      _addToRecentlyPlayed(
-        songs[index],
-      );
+      _addToRecentlyPlayed(songs[index]);
     }
 
     notifyListeners();
 
     try {
+      // The same prepared source can resume instantly without setUrl/setAsset.
+      if (_loadedSongKey == selectedSongKey && _audioPlayer.duration != null) {
+        position = _audioPlayer.position;
+        duration = _audioPlayer.duration ?? duration;
+
+        if (autoPlay) {
+          unawaited(_audioPlayer.play());
+        }
+
+        notifyListeners();
+        return;
+      }
+
+      _loadedSongKey = null;
       await _audioPlayer.stop();
 
-      await _audioPlayer.setAsset(
-        songs[index].audioPath,
-      );
+      if (selectedSong.isNetwork ||
+          selectedSong.audioPath.startsWith('http://') ||
+          selectedSong.audioPath.startsWith('https://')) {
+        await _audioPlayer.setUrl(selectedSong.audioPath, preload: true);
+      } else {
+        await _audioPlayer.setAsset(selectedSong.audioPath, preload: true);
+      }
 
-      duration =
-          _audioPlayer.duration ??
-              Duration.zero;
+      // A newer tap won while this source was loading.
+      if (requestId != _loadRequestId) return;
+
+      _loadedSongKey = selectedSongKey;
+
+      duration = _audioPlayer.duration ?? Duration.zero;
 
       notifyListeners();
 
       if (autoPlay) {
-        await _audioPlayer.play();
+        // Start playback without waiting for the entire track to finish.
+        // This lets PlaybackScreen finish its startup immediately while
+        // network audio continues buffering invisibly in the background.
+        unawaited(_audioPlayer.play());
       }
     } catch (error) {
-      debugPrint(
-        'SONEXA Audio Error: $error',
-      );
+      debugPrint('SONEXA Audio Error: $error');
     }
 
     notifyListeners();
@@ -810,28 +833,18 @@ class PlayerController extends ChangeNotifier {
   // PLAY SONG BY TITLE + ARTIST
   // ============================================================
 
-  Future<void> playSong(
-    String song,
-    String artist,
-  ) async {
-    final int index =
-        songs.indexWhere(
+  Future<void> playSong(String song, String artist) async {
+    final int index = songs.indexWhere(
       (SongModel item) =>
-          item.title.toLowerCase() ==
-              song.toLowerCase() &&
-          item.artist.toLowerCase() ==
-              artist.toLowerCase(),
+          item.title.toLowerCase() == song.toLowerCase() &&
+          item.artist.toLowerCase() == artist.toLowerCase(),
     );
 
     if (index == -1) {
       return;
     }
 
-    await _loadSong(
-      index,
-      autoPlay: true,
-      addToRecentlyPlayed: true,
-    );
+    await _loadSong(index, autoPlay: true, addToRecentlyPlayed: true);
   }
 
   // ============================================================
@@ -839,56 +852,47 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   Future<void> playSongModel(
-    SongModel song,
-  ) async {
-    int index =
-        songs.indexWhere(
-      (SongModel item) =>
-          item.id == song.id,
+    SongModel song, {
+    List<SongModel>? playbackSongs,
+  }) async {
+    if (playbackSongs != null && playbackSongs.isNotEmpty) {
+      _songs
+        ..clear()
+        ..addAll(playbackSongs);
+    }
+
+    int index = _songs.indexWhere(
+      (SongModel item) => item.id == song.id && item.source == song.source,
     );
 
     if (index == -1) {
-      index =
-          songs.indexWhere(
+      index = _songs.indexWhere(
         (SongModel item) =>
-            item.title == song.title &&
-            item.artist == song.artist,
+            item.title.toLowerCase() == song.title.toLowerCase() &&
+            item.artist.toLowerCase() == song.artist.toLowerCase(),
       );
     }
 
     if (index == -1) {
-      return;
+      _songs.add(song);
+      index = _songs.length - 1;
     }
 
-    await _loadSong(
-      index,
-      autoPlay: true,
-      addToRecentlyPlayed: true,
-    );
+    await _loadSong(index, autoPlay: true, addToRecentlyPlayed: true);
   }
 
   // ============================================================
   // PLAY SONG BY ID
   // ============================================================
 
-  Future<void> playSongById(
-    String id,
-  ) async {
-    final int index =
-        songs.indexWhere(
-      (SongModel item) =>
-          item.id == id,
-    );
+  Future<void> playSongById(String id) async {
+    final int index = songs.indexWhere((SongModel item) => item.id == id);
 
     if (index == -1) {
       return;
     }
 
-    await _loadSong(
-      index,
-      autoPlay: true,
-      addToRecentlyPlayed: true,
-    );
+    await _loadSong(index, autoPlay: true, addToRecentlyPlayed: true);
   }
 
   // ============================================================
@@ -914,12 +918,10 @@ class PlayerController extends ChangeNotifier {
         // an already selected song, it is active.
         hasActiveSong = true;
 
-        await _audioPlayer.play();
+        unawaited(_audioPlayer.play());
       }
     } catch (error) {
-      debugPrint(
-        'SONEXA Play/Pause Error: $error',
-      );
+      debugPrint('SONEXA Play/Pause Error: $error');
     }
 
     notifyListeners();
@@ -933,11 +935,9 @@ class PlayerController extends ChangeNotifier {
     try {
       hasActiveSong = true;
 
-      await _audioPlayer.play();
+      unawaited(_audioPlayer.play());
     } catch (error) {
-      debugPrint(
-        'SONEXA Play Error: $error',
-      );
+      debugPrint('SONEXA Play Error: $error');
     }
 
     notifyListeners();
@@ -951,9 +951,7 @@ class PlayerController extends ChangeNotifier {
     try {
       await _audioPlayer.pause();
     } catch (error) {
-      debugPrint(
-        'SONEXA Pause Error: $error',
-      );
+      debugPrint('SONEXA Pause Error: $error');
     }
 
     notifyListeners();
@@ -963,32 +961,21 @@ class PlayerController extends ChangeNotifier {
   // SEEK PROGRESS
   // ============================================================
 
-  Future<void> seekToProgress(
-    double value,
-  ) async {
+  Future<void> seekToProgress(double value) async {
     if (duration.inMilliseconds <= 0) {
       return;
     }
 
-    final double safeValue =
-        value.clamp(0.0, 1.0);
+    final double safeValue = value.clamp(0.0, 1.0);
 
-    final Duration newPosition =
-        Duration(
-      milliseconds:
-          (duration.inMilliseconds *
-                  safeValue)
-              .round(),
+    final Duration newPosition = Duration(
+      milliseconds: (duration.inMilliseconds * safeValue).round(),
     );
 
     try {
-      await _audioPlayer.seek(
-        newPosition,
-      );
+      await _audioPlayer.seek(newPosition);
     } catch (error) {
-      debugPrint(
-        'SONEXA Seek Error: $error',
-      );
+      debugPrint('SONEXA Seek Error: $error');
     }
   }
 
@@ -996,17 +983,11 @@ class PlayerController extends ChangeNotifier {
   // SEEK TO POSITION
   // ============================================================
 
-  Future<void> seekTo(
-    Duration newPosition,
-  ) async {
+  Future<void> seekTo(Duration newPosition) async {
     try {
-      await _audioPlayer.seek(
-        newPosition,
-      );
+      await _audioPlayer.seek(newPosition);
     } catch (error) {
-      debugPrint(
-        'SONEXA Seek Error: $error',
-      );
+      debugPrint('SONEXA Seek Error: $error');
     }
   }
 
@@ -1026,7 +1007,10 @@ class PlayerController extends ChangeNotifier {
 
   Future<void> stop() async {
     try {
+      _loadRequestId++;
       await _audioPlayer.stop();
+
+      _loadedSongKey = null;
 
       position = Duration.zero;
       duration = Duration.zero;
@@ -1037,9 +1021,7 @@ class PlayerController extends ChangeNotifier {
 
       notifyListeners();
     } catch (error) {
-      debugPrint(
-        'SONEXA Stop Error: $error',
-      );
+      debugPrint('SONEXA Stop Error: $error');
     }
   }
 
@@ -1048,16 +1030,11 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   Future<void> seekForward([
-    Duration amount =
-        const Duration(seconds: 10),
+    Duration amount = const Duration(seconds: 10),
   ]) async {
-    final Duration target =
-        position + amount;
+    final Duration target = position + amount;
 
-    final Duration safeTarget =
-        target > duration
-            ? duration
-            : target;
+    final Duration safeTarget = target > duration ? duration : target;
 
     await seekTo(safeTarget);
   }
@@ -1067,16 +1044,11 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   Future<void> seekBackward([
-    Duration amount =
-        const Duration(seconds: 10),
+    Duration amount = const Duration(seconds: 10),
   ]) async {
-    final Duration target =
-        position - amount;
+    final Duration target = position - amount;
 
-    final Duration safeTarget =
-        target < Duration.zero
-            ? Duration.zero
-            : target;
+    final Duration safeTarget = target < Duration.zero ? Duration.zero : target;
 
     await seekTo(safeTarget);
   }
@@ -1095,24 +1067,15 @@ class PlayerController extends ChangeNotifier {
     _handlingCompletion = true;
 
     try {
-      final int nextIndex =
-          currentIndex + 1;
+      final int nextIndex = currentIndex + 1;
 
       if (nextIndex >= songs.length) {
-        await _loadSong(
-          0,
-          autoPlay: true,
-          addToRecentlyPlayed: true,
-        );
+        await _loadSong(0, autoPlay: true, addToRecentlyPlayed: true);
 
         return;
       }
 
-      await _loadSong(
-        nextIndex,
-        autoPlay: true,
-        addToRecentlyPlayed: true,
-      );
+      await _loadSong(nextIndex, autoPlay: true, addToRecentlyPlayed: true);
     } finally {
       _handlingCompletion = false;
     }
@@ -1130,8 +1093,7 @@ class PlayerController extends ChangeNotifier {
     _handlingCompletion = true;
 
     try {
-      final int previousIndex =
-          currentIndex - 1;
+      final int previousIndex = currentIndex - 1;
 
       if (previousIndex < 0) {
         await _loadSong(
@@ -1143,11 +1105,7 @@ class PlayerController extends ChangeNotifier {
         return;
       }
 
-      await _loadSong(
-        previousIndex,
-        autoPlay: true,
-        addToRecentlyPlayed: true,
-      );
+      await _loadSong(previousIndex, autoPlay: true, addToRecentlyPlayed: true);
     } finally {
       _handlingCompletion = false;
     }
@@ -1158,13 +1116,10 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   void toggleLike() {
-    final SongModel song =
-        currentSongData;
+    final SongModel song = currentSongData;
 
-    final int index =
-        _likedSongs.indexWhere(
-      (SongModel item) =>
-          item.id == song.id,
+    final int index = _likedSongs.indexWhere(
+      (SongModel item) => item.id == song.id,
     );
 
     if (index >= 0) {
@@ -1184,13 +1139,9 @@ class PlayerController extends ChangeNotifier {
   // LIKE SONG
   // ============================================================
 
-  Future<void> toggleLikeSong(
-    SongModel song,
-  ) async {
-    final int index =
-        _likedSongs.indexWhere(
-      (SongModel item) =>
-          item.id == song.id,
+  Future<void> toggleLikeSong(SongModel song) async {
+    final int index = _likedSongs.indexWhere(
+      (SongModel item) => item.id == song.id,
     );
 
     if (index >= 0) {
@@ -1199,8 +1150,7 @@ class PlayerController extends ChangeNotifier {
       _likedSongs.add(song);
     }
 
-    if (songs.isNotEmpty &&
-        song.id == currentSongData.id) {
+    if (songs.isNotEmpty && song.id == currentSongData.id) {
       isLiked = index < 0;
     }
 
@@ -1213,13 +1163,8 @@ class PlayerController extends ChangeNotifier {
   // CHECK LIKE
   // ============================================================
 
-  bool isSongLiked(
-    SongModel song,
-  ) {
-    return _likedSongs.any(
-      (SongModel item) =>
-          item.id == song.id,
-    );
+  bool isSongLiked(SongModel song) {
+    return _likedSongs.any((SongModel item) => item.id == song.id);
   }
 
   // ============================================================
@@ -1232,37 +1177,22 @@ class PlayerController extends ChangeNotifier {
       return;
     }
 
-    final String currentId =
-        currentSongData.id;
+    final String currentId = currentSongData.id;
 
-    isLiked = _likedSongs.any(
-      (SongModel item) =>
-          item.id == currentId,
-    );
+    isLiked = _likedSongs.any((SongModel item) => item.id == currentId);
   }
 
   // ============================================================
   // RECENTLY PLAYED
   // ============================================================
 
-  void _addToRecentlyPlayed(
-    SongModel song,
-  ) {
-    _recentlyPlayed.removeWhere(
-      (SongModel item) =>
-          item.id == song.id,
-    );
+  void _addToRecentlyPlayed(SongModel song) {
+    _recentlyPlayed.removeWhere((SongModel item) => item.id == song.id);
 
-    _recentlyPlayed.insert(
-      0,
-      song,
-    );
+    _recentlyPlayed.insert(0, song);
 
     if (_recentlyPlayed.length > 20) {
-      _recentlyPlayed.removeRange(
-        20,
-        _recentlyPlayed.length,
-      );
+      _recentlyPlayed.removeRange(20, _recentlyPlayed.length);
     }
 
     _markStateChanged();
@@ -1290,14 +1220,8 @@ class PlayerController extends ChangeNotifier {
   // QUEUE - ADD ONE SONG
   // ============================================================
 
-  void addToQueue(
-    SongModel song,
-  ) {
-    final bool exists =
-        _queue.any(
-      (SongModel item) =>
-          item.id == song.id,
-    );
+  void addToQueue(SongModel song) {
+    final bool exists = _queue.any((SongModel item) => item.id == song.id);
 
     if (exists) {
       return;
@@ -1314,18 +1238,11 @@ class PlayerController extends ChangeNotifier {
   // QUEUE - ADD MULTIPLE SONGS
   // ============================================================
 
-  void addSongsToQueue(
-    List<SongModel> songsToAdd,
-  ) {
+  void addSongsToQueue(List<SongModel> songsToAdd) {
     bool changed = false;
 
-    for (final SongModel song
-        in songsToAdd) {
-      final bool exists =
-          _queue.any(
-        (SongModel item) =>
-            item.id == song.id,
-      );
+    for (final SongModel song in songsToAdd) {
+      final bool exists = _queue.any((SongModel item) => item.id == song.id);
 
       if (!exists) {
         _queue.add(song);
@@ -1346,11 +1263,8 @@ class PlayerController extends ChangeNotifier {
   // QUEUE - REMOVE BY INDEX
   // ============================================================
 
-  void removeFromQueue(
-    int index,
-  ) {
-    if (index < 0 ||
-        index >= _queue.length) {
+  void removeFromQueue(int index) {
+    if (index < 0 || index >= _queue.length) {
       return;
     }
 
@@ -1365,16 +1279,10 @@ class PlayerController extends ChangeNotifier {
   // QUEUE - REMOVE SONG MODEL
   // ============================================================
 
-  void removeSongFromQueue(
-    SongModel song,
-  ) {
-    final int oldLength =
-        _queue.length;
+  void removeSongFromQueue(SongModel song) {
+    final int oldLength = _queue.length;
 
-    _queue.removeWhere(
-      (SongModel item) =>
-          item.id == song.id,
-    );
+    _queue.removeWhere((SongModel item) => item.id == song.id);
 
     if (_queue.length == oldLength) {
       return;
@@ -1405,9 +1313,7 @@ class PlayerController extends ChangeNotifier {
   // QUEUE - PLAY SONG
   // ============================================================
 
-  Future<void> playQueueSong(
-    Object item,
-  ) async {
+  Future<void> playQueueSong(Object item) async {
     if (_queue.isEmpty) {
       return;
     }
@@ -1417,19 +1323,14 @@ class PlayerController extends ChangeNotifier {
     if (item is int) {
       index = item;
     } else if (item is SongModel) {
-      index = _queue.indexWhere(
-        (SongModel song) =>
-            song.id == item.id,
-      );
+      index = _queue.indexWhere((SongModel song) => song.id == item.id);
     }
 
-    if (index < 0 ||
-        index >= _queue.length) {
+    if (index < 0 || index >= _queue.length) {
       return;
     }
 
-    final SongModel song =
-        _queue[index];
+    final SongModel song = _queue[index];
 
     await playSongModel(song);
   }
@@ -1443,33 +1344,25 @@ class PlayerController extends ChangeNotifier {
       return;
     }
 
-    await playSongModel(
-      _queue.first,
-    );
+    await playSongModel(_queue.first);
   }
 
   // ============================================================
   // PLAYLIST - CREATE
   // ============================================================
 
-  Future<void> createPlaylist(
-    String name,
-  ) async {
-    final String playlistName =
-        name.trim();
+  Future<void> createPlaylist(String name) async {
+    final String playlistName = name.trim();
 
     if (playlistName.isEmpty) {
       return;
     }
 
-    if (_playlists.containsKey(
-      playlistName,
-    )) {
+    if (_playlists.containsKey(playlistName)) {
       return;
     }
 
-    _playlists[playlistName] =
-        <SongModel>[];
+    _playlists[playlistName] = <SongModel>[];
 
     _markStateChanged();
 
@@ -1480,11 +1373,8 @@ class PlayerController extends ChangeNotifier {
   // PLAYLIST - DELETE
   // ============================================================
 
-  Future<void> deletePlaylist(
-    String name,
-  ) async {
-    final bool removed =
-        _playlists.remove(name) != null;
+  Future<void> deletePlaylist(String name) async {
+    final bool removed = _playlists.remove(name) != null;
 
     if (!removed) {
       return;
@@ -1499,40 +1389,29 @@ class PlayerController extends ChangeNotifier {
   // PLAYLIST - GET SONGS
   // ============================================================
 
-  List<SongModel> getPlaylistSongs(
-    String name,
-  ) {
-    final List<SongModel>? playlist =
-        _playlists[name];
+  List<SongModel> getPlaylistSongs(String name) {
+    final List<SongModel>? playlist = _playlists[name];
 
     if (playlist == null) {
       return const <SongModel>[];
     }
 
-    return List<SongModel>.unmodifiable(
-      playlist,
-    );
+    return List<SongModel>.unmodifiable(playlist);
   }
 
   // ============================================================
   // PLAYLIST - ADD SONG
   // ============================================================
 
-  Future<void> addSongToPlaylist(
-    String playlistName,
-    SongModel song,
-  ) async {
-    final List<SongModel>? playlist =
-        _playlists[playlistName];
+  Future<void> addSongToPlaylist(String playlistName, SongModel song) async {
+    final List<SongModel>? playlist = _playlists[playlistName];
 
     if (playlist == null) {
       return;
     }
 
-    final bool alreadyExists =
-        playlist.any(
-      (SongModel item) =>
-          item.id == song.id,
+    final bool alreadyExists = playlist.any(
+      (SongModel item) => item.id == song.id,
     );
 
     if (alreadyExists) {
@@ -1554,20 +1433,15 @@ class PlayerController extends ChangeNotifier {
     String playlistName,
     SongModel song,
   ) async {
-    final List<SongModel>? playlist =
-        _playlists[playlistName];
+    final List<SongModel>? playlist = _playlists[playlistName];
 
     if (playlist == null) {
       return;
     }
 
-    final int oldLength =
-        playlist.length;
+    final int oldLength = playlist.length;
 
-    playlist.removeWhere(
-      (SongModel item) =>
-          item.id == song.id,
-    );
+    playlist.removeWhere((SongModel item) => item.id == song.id);
 
     if (playlist.length == oldLength) {
       return;
@@ -1582,58 +1456,113 @@ class PlayerController extends ChangeNotifier {
   // PLAYLIST - ADD CURRENT SONG
   // ============================================================
 
-  Future<void> addCurrentSongToPlaylist(
-    String playlistName,
-  ) async {
-    await addSongToPlaylist(
-      playlistName,
-      currentSongData,
-    );
+  Future<void> addCurrentSongToPlaylist(String playlistName) async {
+    await addSongToPlaylist(playlistName, currentSongData);
   }
 
   // ============================================================
   // PLAYLIST - REMOVE CURRENT SONG
   // ============================================================
 
-  Future<void> removeCurrentSongFromPlaylist(
-    String playlistName,
-  ) async {
-    await removeSongFromPlaylist(
-      playlistName,
-      currentSongData,
-    );
+  Future<void> removeCurrentSongFromPlaylist(String playlistName) async {
+    await removeSongFromPlaylist(playlistName, currentSongData);
   }
 
   // ============================================================
   // PLAYLIST - CHECK SONG
   // ============================================================
 
-  bool playlistContainsSong(
-    String playlistName,
-    SongModel song,
-  ) {
-    final List<SongModel>? playlist =
-        _playlists[playlistName];
+  bool playlistContainsSong(String playlistName, SongModel song) {
+    final List<SongModel>? playlist = _playlists[playlistName];
 
     if (playlist == null) {
       return false;
     }
 
-    return playlist.any(
-      (SongModel item) =>
-          item.id == song.id,
+    return playlist.any((SongModel item) => item.id == song.id);
+  }
+
+  // ============================================================
+  // SAVED ALBUMS
+  // ============================================================
+
+  Future<void> saveAlbum(String albumName, List<SongModel> albumSongs) async {
+    final String cleanName = albumName.trim();
+    final List<SongModel> cleanSongs = _uniqueSongs(albumSongs);
+
+    if (cleanName.isEmpty || cleanSongs.isEmpty) return;
+
+    _savedAlbums[cleanName] = cleanSongs;
+    _markStateChanged();
+    notifyListeners();
+  }
+
+  Future<void> removeSavedAlbum(String albumName) async {
+    if (_savedAlbums.remove(albumName) == null) return;
+
+    _markStateChanged();
+    notifyListeners();
+  }
+
+  bool isAlbumSaved(String albumName) {
+    return _savedAlbums.containsKey(albumName.trim());
+  }
+
+  List<SongModel> getSavedAlbumSongs(String albumName) {
+    return List<SongModel>.unmodifiable(
+      _savedAlbums[albumName] ?? const <SongModel>[],
     );
+  }
+
+  // ============================================================
+  // SAVED ARTISTS
+  // ============================================================
+
+  Future<void> saveArtist(
+    String artistName,
+    List<SongModel> artistSongs,
+  ) async {
+    final String cleanName = artistName.trim();
+    final List<SongModel> cleanSongs = _uniqueSongs(artistSongs);
+
+    if (cleanName.isEmpty || cleanSongs.isEmpty) return;
+
+    _savedArtists[cleanName] = cleanSongs;
+    _markStateChanged();
+    notifyListeners();
+  }
+
+  Future<void> removeSavedArtist(String artistName) async {
+    if (_savedArtists.remove(artistName) == null) return;
+
+    _markStateChanged();
+    notifyListeners();
+  }
+
+  bool isArtistSaved(String artistName) {
+    return _savedArtists.containsKey(artistName.trim());
+  }
+
+  List<SongModel> getSavedArtistSongs(String artistName) {
+    return List<SongModel>.unmodifiable(
+      _savedArtists[artistName] ?? const <SongModel>[],
+    );
+  }
+
+  List<SongModel> _uniqueSongs(Iterable<SongModel> sourceSongs) {
+    final Set<String> keys = <String>{};
+
+    return sourceSongs.where((SongModel song) {
+      return keys.add('${song.source}:${song.id}');
+    }).toList();
   }
 
   // ============================================================
   // FIND SONG BY ID
   // ============================================================
 
-  SongModel? findSongById(
-    String id,
-  ) {
-    for (final SongModel song
-        in songs) {
+  SongModel? findSongById(String id) {
+    for (final SongModel song in songs) {
       if (song.id == id) {
         return song;
       }
@@ -1646,13 +1575,9 @@ class PlayerController extends ChangeNotifier {
   // FIND SONG BY TITLE
   // ============================================================
 
-  SongModel? findSongByTitle(
-    String title,
-  ) {
-    for (final SongModel song
-        in songs) {
-      if (song.title.toLowerCase() ==
-          title.toLowerCase()) {
+  SongModel? findSongByTitle(String title) {
+    for (final SongModel song in songs) {
+      if (song.title.toLowerCase() == title.toLowerCase()) {
         return song;
       }
     }
@@ -1664,18 +1589,14 @@ class PlayerController extends ChangeNotifier {
   // FORMAT DURATION
   // ============================================================
 
-  String formatDuration(
-    Duration value,
-  ) {
+  String formatDuration(Duration value) {
     if (value.inMilliseconds <= 0) {
       return '0:00';
     }
 
-    final int minutes =
-        value.inMinutes;
+    final int minutes = value.inMinutes;
 
-    final int seconds =
-        value.inSeconds.remainder(60);
+    final int seconds = value.inSeconds.remainder(60);
 
     return '$minutes:${seconds.toString().padLeft(2, '0')}';
   }
@@ -1700,8 +1621,7 @@ class PlayerController extends ChangeNotifier {
   // AUDIO PLAYER ACCESS
   // ============================================================
 
-  AudioPlayer get audioPlayer =>
-      _audioPlayer;
+  AudioPlayer get audioPlayer => _audioPlayer;
 
   // ============================================================
   // DISPOSE
@@ -1722,4 +1642,3 @@ class PlayerController extends ChangeNotifier {
     super.dispose();
   }
 }
-

@@ -331,14 +331,7 @@ class _MainShellState extends State<MainShell> {
                     // MINI PLAYER
                     // =================================================
 
-                    const Padding(
-                      padding: EdgeInsets.only(
-                        left: 5,
-                        right: 5,
-                        bottom: 2,
-                      ),
-                      child: MiniPlayer(),
-                    ),
+                    const MiniPlayer(),
 
                     // =================================================
                     // BOTTOM NAVIGATION
@@ -346,7 +339,8 @@ class _MainShellState extends State<MainShell> {
 
                     Container(
                       height: 54,
-                      width: MediaQuery.sizeOf(context).width - 16,
+                      // Exact 2px outer margin on both sides.
+                      width: MediaQuery.sizeOf(context).width - 4,
 
                       padding:
                           const EdgeInsets.symmetric(

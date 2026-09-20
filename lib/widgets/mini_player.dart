@@ -12,17 +12,13 @@ class MiniPlayer extends StatelessWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color surfaceColor =
-        colorScheme.surface;
+    final Color surfaceColor = colorScheme.surface;
 
-    final Color primaryText =
-        colorScheme.onSurface;
+    final Color primaryText = colorScheme.onSurface;
 
-    final Color secondaryText =
-        colorScheme.onSurfaceVariant;
+    final Color secondaryText = colorScheme.onSurfaceVariant;
 
     // ================================================================
     // THEME-AWARE BORDER
@@ -49,13 +45,9 @@ class MiniPlayer extends StatelessWidget {
 
         if (player.duration.inMilliseconds > 0) {
           progress =
-              player.position.inMilliseconds /
-              player.duration.inMilliseconds;
+              player.position.inMilliseconds / player.duration.inMilliseconds;
 
-          progress = progress.clamp(
-            0.0,
-            1.0,
-          );
+          progress = progress.clamp(0.0, 1.0);
         }
 
         // ============================================================
@@ -78,169 +70,111 @@ class MiniPlayer extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) =>
-                    const PlaybackScreen(),
-              ),
-            );
+            Navigator.of(
+              context,
+            ).push(MaterialPageRoute(builder: (_) => const PlaybackScreen()));
           },
           child: Container(
             height: 54,
-            margin: const EdgeInsets.symmetric(
-              horizontal: 10,
-            ),
+            margin: const EdgeInsets.fromLTRB(4, 0, 4, 2),
             decoration: BoxDecoration(
               color: surfaceColor,
-              borderRadius:
-                  BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(15),
 
               // ========================================================
               // THEME-AWARE BORDER
               // ========================================================
-
-              border: Border.all(
-                color: borderColor,
-                width: 1,
-              ),
+              border: Border.all(color: borderColor, width: 1),
 
               // ========================================================
               // SOFT SHADOW
               // ========================================================
-
               boxShadow: [
                 BoxShadow(
-                  color:
-                      Colors.black.withValues(
-                    alpha:
-                        isDark ? 0.30 : 0.14,
-                  ),
+                  color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.14),
                   blurRadius: 18,
                   spreadRadius: 0,
-                  offset:
-                      const Offset(0, 6),
+                  offset: const Offset(0, 6),
                 ),
               ],
             ),
             child: ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(15),
+              borderRadius: BorderRadius.circular(15),
               child: Stack(
                 children: [
                   Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(
-                      8,
-                      5,
-                      6,
-                      5,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(8, 5, 6, 5),
                     child: Row(
                       children: [
                         // ==================================================
                         // ARTWORK
                         // ==================================================
 
-                        ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(
-                            9,
-                          ),
-                          child: Image.asset(
-                            player.currentImage,
-                            width: 40,
-                            height: 40,
-                            fit: BoxFit.cover,
-                            errorBuilder: (
-                              context,
-                              error,
-                              stackTrace,
-                            ) {
-                              return Container(
-                                width: 40,
-                                height: 40,
-                                decoration:
-                                    const BoxDecoration(
-                                  gradient:
-                                      LinearGradient(
-                                    begin:
-                                        Alignment
-                                            .topLeft,
-                                    end:
-                                        Alignment
-                                            .bottomRight,
-                                    colors: [
-                                      Color(
-                                        0xFFB77CFF,
-                                      ),
-                                      Color(
-                                        0xFF7138C8,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                child:
-                                    const Icon(
-                                  Icons
-                                      .music_note_rounded,
-                                  color:
-                                      Colors.white,
-                                  size: 20,
-                                ),
-                              );
-                            },
-                          ),
+                        _MiniArtwork(
+                          imagePath: player.currentImage,
+                          isNetwork: player.currentSongData.isNetwork,
                         ),
 
-                        const SizedBox(
-                          width: 9,
-                        ),
+                        const SizedBox(width: 9),
 
                         // ==================================================
                         // SONG DETAILS
                         // ==================================================
-
                         Expanded(
                           child: Column(
-                            mainAxisAlignment:
-                                MainAxisAlignment
-                                    .center,
-                            crossAxisAlignment:
-                                CrossAxisAlignment
-                                    .start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 player.currentSong,
                                 maxLines: 1,
-                                overflow:
-                                    TextOverflow
-                                        .ellipsis,
+                                overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
-                                  color:
-                                      primaryText,
+                                  color: primaryText,
                                   fontSize: 12.5,
-                                  fontWeight:
-                                      FontWeight.w700,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
 
-                              const SizedBox(
-                                height: 2,
-                              ),
+                              const SizedBox(height: 2),
 
-                              Text(
-                                player.currentArtist,
-                                maxLines: 1,
-                                overflow:
-                                    TextOverflow
-                                        .ellipsis,
-                                style: TextStyle(
-                                  color:
-                                      secondaryText,
-                                  fontSize: 9.5,
-                                  fontWeight:
-                                      FontWeight.w500,
-                                ),
+                              Row(
+                                children: [
+                                  Flexible(
+                                    child: Text(
+                                      player.currentArtist,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: secondaryText,
+                                        fontSize: 9.5,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ),
+                                  if (player.currentSongData.isPreview) ...[
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 1,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF59E0B)
+                                            .withValues(alpha: 0.15),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        'PREVIEW',
+                                        style: TextStyle(
+                                          color: Color(0xFFF59E0B),
+                                          fontSize: 6.5,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
                               ),
                             ],
                           ),
@@ -249,23 +183,17 @@ class MiniPlayer extends StatelessWidget {
                         // ==================================================
                         // PREVIOUS
                         // ==================================================
-
                         IconButton(
-                          onPressed:
-                              player.previousSong,
-                          padding:
-                              EdgeInsets.zero,
-                          constraints:
-                              const BoxConstraints(
+                          onPressed: player.previousSong,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
                             minWidth: 32,
                             minHeight: 32,
                           ),
                           splashRadius: 16,
                           icon: Icon(
-                            Icons
-                                .skip_previous_rounded,
-                            color:
-                                secondaryText,
+                            Icons.skip_previous_rounded,
+                            color: secondaryText,
                             size: 21,
                           ),
                         ),
@@ -273,57 +201,31 @@ class MiniPlayer extends StatelessWidget {
                         // ==================================================
                         // PLAY / PAUSE
                         // ==================================================
-
                         GestureDetector(
-                          onTap:
-                              player.togglePlayPause,
+                          onTap: player.togglePlayPause,
                           child: Container(
                             width: 34,
                             height: 34,
-                            decoration:
-                                const BoxDecoration(
-                              shape:
-                                  BoxShape.circle,
-                              gradient:
-                                  LinearGradient(
-                                begin:
-                                    Alignment
-                                        .topLeft,
-                                end:
-                                    Alignment
-                                        .bottomRight,
-                                colors: [
-                                  Color(
-                                    0xFFB77CFF,
-                                  ),
-                                  Color(
-                                    0xFF7138C8,
-                                  ),
-                                ],
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [Color(0xFFB77CFF), Color(0xFF7138C8)],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color:
-                                      Color(
-                                    0x443F1675,
-                                  ),
+                                  color: Color(0x443F1675),
                                   blurRadius: 8,
-                                  offset:
-                                      Offset(
-                                    0,
-                                    3,
-                                  ),
+                                  offset: Offset(0, 3),
                                 ),
                               ],
                             ),
                             child: Icon(
                               player.isPlaying
-                                  ? Icons
-                                      .pause_rounded
-                                  : Icons
-                                      .play_arrow_rounded,
-                              color:
-                                  Colors.white,
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              color: Colors.white,
                               size: 19,
                             ),
                           ),
@@ -332,23 +234,17 @@ class MiniPlayer extends StatelessWidget {
                         // ==================================================
                         // NEXT
                         // ==================================================
-
                         IconButton(
-                          onPressed:
-                              player.nextSong,
-                          padding:
-                              EdgeInsets.zero,
-                          constraints:
-                              const BoxConstraints(
+                          onPressed: player.nextSong,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(
                             minWidth: 32,
                             minHeight: 32,
                           ),
                           splashRadius: 16,
                           icon: Icon(
-                            Icons
-                                .skip_next_rounded,
-                            color:
-                                secondaryText,
+                            Icons.skip_next_rounded,
+                            color: secondaryText,
                             size: 21,
                           ),
                         ),
@@ -359,7 +255,6 @@ class MiniPlayer extends StatelessWidget {
                   // ========================================================
                   // ACTIVE PLAYBACK PROGRESS — 2PX
                   // ========================================================
-
                   Positioned(
                     left: 0,
                     right: 0,
@@ -373,45 +268,27 @@ class MiniPlayer extends StatelessWidget {
                           // ==================================================
 
                           Container(
-                            width:
-                                double.infinity,
+                            width: double.infinity,
                             height: 2,
-                            color:
-                                progressBackground,
+                            color: progressBackground,
                           ),
 
                           // ==================================================
                           // ACTIVE PROGRESS
                           // ==================================================
-
                           FractionallySizedBox(
-                            alignment:
-                                Alignment
-                                    .centerLeft,
-                            widthFactor:
-                                progress,
+                            alignment: Alignment.centerLeft,
+                            widthFactor: progress,
                             child: Container(
                               height: 2,
-                              decoration:
-                                  const BoxDecoration(
-                                gradient:
-                                    LinearGradient(
-                                  begin:
-                                      Alignment
-                                          .centerLeft,
-                                  end:
-                                      Alignment
-                                          .centerRight,
+                              decoration: const BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
                                   colors: [
-                                    Color(
-                                      0xFF8B5CF6,
-                                    ),
-                                    Color(
-                                      0xFFB77CFF,
-                                    ),
-                                    Color(
-                                      0xFFD2B5FF,
-                                    ),
+                                    Color(0xFF8B5CF6),
+                                    Color(0xFFB77CFF),
+                                    Color(0xFFD2B5FF),
                                   ],
                                 ),
                               ),
@@ -427,6 +304,68 @@ class MiniPlayer extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _MiniArtwork extends StatelessWidget {
+  final String imagePath;
+  final bool isNetwork;
+
+  const _MiniArtwork({required this.imagePath, required this.isNetwork});
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget fallback = Container(
+      width: 40,
+      height: 40,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFB77CFF), Color(0xFF7138C8)],
+        ),
+      ),
+      child: const Icon(
+        Icons.music_note_rounded,
+        color: Colors.white,
+        size: 20,
+      ),
+    );
+
+    Widget image = fallback;
+
+    if (imagePath.trim().isNotEmpty) {
+      if (isNetwork ||
+          imagePath.startsWith('http://') ||
+          imagePath.startsWith('https://')) {
+        image = Image.network(
+          imagePath,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          gaplessPlayback: true,
+          filterQuality: FilterQuality.medium,
+          loadingBuilder: (context, child, progress) {
+            return progress == null ? child : fallback;
+          },
+          errorBuilder: (context, error, stackTrace) => fallback,
+        );
+      } else {
+        image = Image.asset(
+          imagePath,
+          width: 40,
+          height: 40,
+          fit: BoxFit.cover,
+          filterQuality: FilterQuality.medium,
+          errorBuilder: (context, error, stackTrace) => fallback,
+        );
+      }
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(9),
+      child: SizedBox(width: 40, height: 40, child: image),
     );
   }
 }

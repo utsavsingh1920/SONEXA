@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/song_model.dart';
+import '../player/player_controller.dart';
 import '../player/player_scope.dart';
 
 class QueueScreen extends StatelessWidget {
@@ -15,45 +16,31 @@ class QueueScreen extends StatelessWidget {
   }
 
   static Color _backgroundColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF080812)
-        : const Color(0xFFF7F5FA);
+    return _isDark(context) ? const Color(0xFF080812) : const Color(0xFFF7F5FA);
   }
 
   static Color _topButtonColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF17131F)
-        : const Color(0xFFFFFFFF);
+    return _isDark(context) ? const Color(0xFF17131F) : const Color(0xFFFFFFFF);
   }
 
   static Color _borderColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF292231)
-        : const Color(0xFFE3DDEB);
+    return _isDark(context) ? const Color(0xFF292231) : const Color(0xFFE3DDEB);
   }
 
   static Color _primaryText(BuildContext context) {
-    return _isDark(context)
-        ? Colors.white
-        : const Color(0xFF18151D);
+    return _isDark(context) ? Colors.white : const Color(0xFF18151D);
   }
 
   static Color _secondaryText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF91899F)
-        : const Color(0xFF6F6878);
+    return _isDark(context) ? const Color(0xFF91899F) : const Color(0xFF6F6878);
   }
 
   static Color _mutedText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF777080)
-        : const Color(0xFF777080);
+    return _isDark(context) ? const Color(0xFF777080) : const Color(0xFF777080);
   }
 
   static Color _iconColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFFB9B2C3)
-        : const Color(0xFF625B6B);
+    return _isDark(context) ? const Color(0xFFB9B2C3) : const Color(0xFF625B6B);
   }
 
   // ============================================================
@@ -89,12 +76,7 @@ class QueueScreen extends StatelessWidget {
                 // ========================================================
 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    20,
-                    18,
-                    20,
-                    10,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
                   child: Row(
                     children: [
                       // ==================================================
@@ -111,9 +93,7 @@ class QueueScreen extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: _topButtonColor(context),
                             borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: _borderColor(context),
-                            ),
+                            border: Border.all(color: _borderColor(context)),
                           ),
                           child: Icon(
                             Icons.arrow_back_rounded,
@@ -126,7 +106,6 @@ class QueueScreen extends StatelessWidget {
                       // ==================================================
                       // TITLE
                       // ==================================================
-
                       Expanded(
                         child: Center(
                           child: Text(
@@ -144,7 +123,6 @@ class QueueScreen extends StatelessWidget {
                       // ==================================================
                       // CLEAR BUTTON
                       // ==================================================
-
                       SizedBox(
                         width: 42,
                         height: 42,
@@ -154,10 +132,7 @@ class QueueScreen extends StatelessWidget {
                                 tooltip: 'Clear Queue',
                                 padding: EdgeInsets.zero,
                                 onPressed: () {
-                                  _showClearQueueDialog(
-                                    context,
-                                    player,
-                                  );
+                                  _showClearQueueDialog(context, player);
                                 },
                                 icon: const Icon(
                                   Icons.delete_sweep_rounded,
@@ -173,14 +148,8 @@ class QueueScreen extends StatelessWidget {
                 // ========================================================
                 // QUEUE INFO
                 // ========================================================
-
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    22,
-                    12,
-                    22,
-                    18,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 18),
                   child: Row(
                     children: [
                       const Icon(
@@ -204,24 +173,19 @@ class QueueScreen extends StatelessWidget {
                 // ========================================================
                 // QUEUE LIST
                 // ========================================================
-
                 Expanded(
                   child: queue.isEmpty
                       ? _emptyQueue(context)
                       : ListView.builder(
                           physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(
-                            18,
-                            0,
-                            18,
-                            30,
-                          ),
+                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
                           itemCount: queue.length,
                           itemBuilder: (context, index) {
                             final SongModel song = queue[index];
 
                             final bool isCurrent =
-                                player.currentSongData.id == song.id;
+                                player.currentSongData.id == song.id &&
+                                player.currentSongData.source == song.source;
 
                             final bool isPlaying =
                                 isCurrent && player.isPlaying;
@@ -235,7 +199,6 @@ class QueueScreen extends StatelessWidget {
                               // ========================================
                               // PLAY SONG
                               // ========================================
-
                               onTap: () {
                                 player.playQueueSong(song);
                               },
@@ -243,13 +206,8 @@ class QueueScreen extends StatelessWidget {
                               // ========================================
                               // REMOVE SONG
                               // ========================================
-
                               onRemove: () {
-                                _removeSongFromQueue(
-                                  context,
-                                  player,
-                                  index,
-                                );
+                                _removeSongFromQueue(context, player, index);
                               },
                             );
                           },
@@ -269,7 +227,7 @@ class QueueScreen extends StatelessWidget {
 
   void _removeSongFromQueue(
     BuildContext context,
-    dynamic player,
+    PlayerController player,
     int index,
   ) {
     // Safety check.
@@ -315,10 +273,7 @@ class QueueScreen extends StatelessWidget {
   // CLEAR QUEUE DIALOG
   // ============================================================
 
-  void _showClearQueueDialog(
-    BuildContext context,
-    dynamic player,
-  ) {
+  void _showClearQueueDialog(BuildContext context, PlayerController player) {
     final bool isDark = _isDark(context);
 
     showDialog<void>(
@@ -342,10 +297,7 @@ class QueueScreen extends StatelessWidget {
           ),
           content: Text(
             'All songs will be removed from the queue.',
-            style: TextStyle(
-              color: _secondaryText(context),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: _secondaryText(context), fontSize: 13),
           ),
           actions: [
             // ==========================================================
@@ -368,7 +320,6 @@ class QueueScreen extends StatelessWidget {
             // ==========================================================
             // CLEAR
             // ==========================================================
-
             TextButton(
               onPressed: () {
                 // IMPORTANT:
@@ -448,10 +399,7 @@ class QueueScreen extends StatelessWidget {
 
           Text(
             'Add songs to start playing',
-            style: TextStyle(
-              color: _mutedText(context),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: _mutedText(context), fontSize: 12),
           ),
         ],
       ),
@@ -490,24 +438,18 @@ class _QueueSongItem extends StatelessWidget {
 
   Color _titleColor(BuildContext context) {
     return isCurrent
-        ? (_isDark(context)
-            ? const Color(0xFFD8B7FF)
-            : const Color(0xFF7138C8))
+        ? (_isDark(context) ? const Color(0xFFD8B7FF) : const Color(0xFF7138C8))
         : (_isDark(context)
-            ? const Color(0xFFE7E3EB)
-            : const Color(0xFF28232F));
+              ? const Color(0xFFE7E3EB)
+              : const Color(0xFF28232F));
   }
 
   Color _artistColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF817A8D)
-        : const Color(0xFF777080);
+    return _isDark(context) ? const Color(0xFF817A8D) : const Color(0xFF777080);
   }
 
   Color _moreIconColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF686171)
-        : const Color(0xFF8A8292);
+    return _isDark(context) ? const Color(0xFF686171) : const Color(0xFF8A8292);
   }
 
   // ============================================================
@@ -523,34 +465,22 @@ class _QueueSongItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         height: 76,
-        margin: const EdgeInsets.only(
-          bottom: 9,
-        ),
+        margin: const EdgeInsets.only(bottom: 9),
         padding: const EdgeInsets.all(9),
         decoration: BoxDecoration(
           color: isCurrent
-              ? (isDark
-                  ? const Color(0xFF1C122A)
-                  : const Color(0xFFF0E8FA))
-              : (isDark
-                  ? const Color(0xFF12101A)
-                  : const Color(0xFFFFFFFF)),
+              ? (isDark ? const Color(0xFF1C122A) : const Color(0xFFF0E8FA))
+              : (isDark ? const Color(0xFF12101A) : const Color(0xFFFFFFFF)),
           borderRadius: BorderRadius.circular(17),
           border: Border.all(
             color: isCurrent
-                ? (isDark
-                    ? const Color(0xFF63349A)
-                    : const Color(0xFFC39BEF))
-                : (isDark
-                    ? const Color(0xFF292231)
-                    : const Color(0xFFE3DDEB)),
+                ? (isDark ? const Color(0xFF63349A) : const Color(0xFFC39BEF))
+                : (isDark ? const Color(0xFF292231) : const Color(0xFFE3DDEB)),
           ),
           boxShadow: isCurrent
               ? [
                   BoxShadow(
-                    color: const Color(0xFF8B5CF6).withValues(
-                      alpha: 0.08,
-                    ),
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -578,8 +508,8 @@ class _QueueSongItem extends StatelessWidget {
                         color: isCurrent
                             ? const Color(0xFFB77CFF)
                             : (isDark
-                                ? const Color(0xFF716A7B)
-                                : const Color(0xFF817A8D)),
+                                  ? const Color(0xFF716A7B)
+                                  : const Color(0xFF817A8D)),
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
                       ),
@@ -591,41 +521,9 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // ARTWORK
             // ============================================================
-
             ClipRRect(
               borderRadius: BorderRadius.circular(13),
-              child: Image.asset(
-                song.imagePath,
-                width: 56,
-                height: 56,
-                fit: BoxFit.cover,
-                errorBuilder: (
-                  context,
-                  error,
-                  stackTrace,
-                ) {
-                  return Container(
-                    width: 56,
-                    height: 56,
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFFB77CFF),
-                          Color(0xFF7138C8),
-                          Color(0xFF29113F),
-                        ],
-                      ),
-                    ),
-                    child: const Icon(
-                      Icons.music_note_rounded,
-                      color: Colors.white,
-                      size: 25,
-                    ),
-                  );
-                },
-              ),
+              child: _QueueArtwork(imagePath: song.imagePath),
             ),
 
             const SizedBox(width: 12),
@@ -633,7 +531,6 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // SONG INFORMATION
             // ============================================================
-
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -669,7 +566,6 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // CURRENT PLAYING
             // ============================================================
-
             if (isPlaying)
               const Padding(
                 padding: EdgeInsets.only(right: 4),
@@ -683,7 +579,6 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // MORE / REMOVE
             // ============================================================
-
             SizedBox(
               width: 34,
               height: 45,
@@ -737,6 +632,65 @@ class _QueueSongItem extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _QueueArtwork extends StatelessWidget {
+  const _QueueArtwork({required this.imagePath});
+
+  final String imagePath;
+
+  @override
+  Widget build(BuildContext context) {
+    final String cleanPath = imagePath.trim();
+
+    if (cleanPath.isEmpty) return _fallback();
+
+    if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+      final String safeUrl = cleanPath.startsWith('http://')
+          ? cleanPath.replaceFirst('http://', 'https://')
+          : cleanPath;
+
+      return Image.network(
+        safeUrl,
+        width: 56,
+        height: 56,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        loadingBuilder: (context, child, progress) {
+          return progress == null ? child : _fallback();
+        },
+        errorBuilder: (_, _, _) => _fallback(),
+      );
+    }
+
+    return Image.asset(
+      cleanPath,
+      width: 56,
+      height: 56,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _fallback(),
+    );
+  }
+
+  Widget _fallback() {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFB77CFF), Color(0xFF7138C8), Color(0xFF29113F)],
+        ),
+      ),
+      child: const Icon(
+        Icons.music_note_rounded,
+        color: Colors.white,
+        size: 25,
       ),
     );
   }

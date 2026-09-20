@@ -6,6 +6,9 @@ import '../data/songs_data.dart';
 import '../models/song_model.dart';
 import '../player/player_controller.dart';
 import '../player/player_scope.dart';
+import '../services/audius_api_service.dart';
+import '../services/itunes_api_service.dart';
+import '../services/jamendo_api_service.dart';
 import 'library_screen.dart';
 import 'notifications_screen.dart';
 import 'playback_screen.dart';
@@ -23,6 +26,12 @@ class _HomeScreenState extends State<HomeScreen>
   late final AnimationController _equalizerController;
 
   Timer? _heroTimer;
+
+  List<SongModel> _indianSongs = const <SongModel>[];
+  List<SongModel> _fullSongs = const <SongModel>[];
+  List<SongModel> _audiusSongs = const <SongModel>[];
+  bool _isLoadingHomeSongs = true;
+  String? _homeSongsError;
 
   static const int _heroInitialPage = 999;
   static const int _heroCount = 3;
@@ -120,9 +129,7 @@ class _HomeScreenState extends State<HomeScreen>
   void initState() {
     super.initState();
 
-    _heroController = PageController(
-      initialPage: _heroInitialPage,
-    );
+    _heroController = PageController(initialPage: _heroInitialPage);
 
     _equalizerController = AnimationController(
       vsync: this,
@@ -131,29 +138,80 @@ class _HomeScreenState extends State<HomeScreen>
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startHeroTimer();
+      _loadHomeSongs();
     });
+  }
+
+  Future<void> _loadHomeSongs({bool forceRefresh = false}) async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingHomeSongs = true;
+      _homeSongsError = null;
+    });
+
+    if (forceRefresh) {
+      ITunesApiService.instance.clearCache();
+      JamendoApiService.instance.clearCache();
+    }
+
+    try {
+      final List<List<SongModel>> results = await Future.wait([
+        ITunesApiService.instance.searchSongs('Bollywood hits', limit: 25),
+        JamendoApiService.instance.getPopularTracks(limit: 25),
+        AudiusApiService.instance.getTrendingTracks(limit: 25),
+      ]);
+
+      if (!mounted) return;
+
+      setState(() {
+        _indianSongs = results[0];
+        _fullSongs = results[1];
+        _audiusSongs = results[2];
+        _isLoadingHomeSongs = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _isLoadingHomeSongs = false;
+        _homeSongsError = 'Online music could not be loaded.';
+      });
+    }
+  }
+
+  List<SongModel> get _homeSongs {
+    final List<SongModel> combined = <SongModel>[
+      ..._indianSongs,
+      ..._fullSongs,
+      ..._audiusSongs,
+      ...allSongs,
+    ];
+    final Set<String> keys = <String>{};
+
+    return combined.where((song) {
+      final String key = '${song.source}:${song.id}';
+      return keys.add(key);
+    }).toList();
   }
 
   void _startHeroTimer() {
     _heroTimer?.cancel();
 
-    _heroTimer = Timer.periodic(
-      const Duration(seconds: 4),
-      (_) {
-        if (!mounted || !_heroController.hasClients) {
-          return;
-        }
+    _heroTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (!mounted || !_heroController.hasClients) {
+        return;
+      }
 
-        if (_heroController.position.isScrollingNotifier.value) {
-          return;
-        }
+      if (_heroController.position.isScrollingNotifier.value) {
+        return;
+      }
 
-        _heroController.nextPage(
-          duration: const Duration(milliseconds: 600),
-          curve: Curves.easeInOut,
-        );
-      },
-    );
+      _heroController.nextPage(
+        duration: const Duration(milliseconds: 600),
+        curve: Curves.easeInOut,
+      );
+    });
   }
 
   @override
@@ -172,22 +230,27 @@ class _HomeScreenState extends State<HomeScreen>
     BuildContext context,
     SongModel song, {
     bool openPlayer = false,
+    List<SongModel>? playbackSongs,
   }) async {
     final player = PlayerScope.of(context);
+    final List<SongModel> queue =
+        playbackSongs != null && playbackSongs.isNotEmpty
+        ? playbackSongs
+        : _homeSongs;
+
+    if (queue.isNotEmpty) {
+      player.setPlaybackSongs(queue);
+    }
 
     if (!openPlayer) {
-      await player.playSongModel(song);
+      await player.playSongModel(song, playbackSongs: queue);
       return;
     }
 
     if (!context.mounted) return;
 
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => PlaybackScreen(
-          selectedSong: song,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => PlaybackScreen(selectedSong: song)),
     );
   }
 
@@ -201,8 +264,7 @@ class _HomeScreenState extends State<HomeScreen>
     int index,
   ) {
     if (player.playlistNames.contains(playlistName)) {
-      final savedSongs =
-          player.getPlaylistSongs(playlistName);
+      final savedSongs = player.getPlaylistSongs(playlistName);
 
       if (savedSongs.isNotEmpty) {
         return List<SongModel>.from(savedSongs);
@@ -229,18 +291,13 @@ class _HomeScreenState extends State<HomeScreen>
       await player.createPlaylist(playlistName);
     }
 
-    final existingSongs =
-        player.getPlaylistSongs(playlistName);
+    final existingSongs = player.getPlaylistSongs(playlistName);
 
-    final existingIds =
-        existingSongs.map((song) => song.id).toSet();
+    final existingIds = existingSongs.map((song) => song.id).toSet();
 
     for (final song in songs) {
       if (!existingIds.contains(song.id)) {
-        await player.addSongToPlaylist(
-          playlistName,
-          song,
-        );
+        await player.addSongToPlaylist(playlistName, song);
 
         existingIds.add(song.id);
       }
@@ -250,9 +307,7 @@ class _HomeScreenState extends State<HomeScreen>
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          '$playlistName saved to Library',
-        ),
+        content: Text('$playlistName saved to Library'),
         behavior: SnackBarBehavior.floating,
         duration: const Duration(seconds: 2),
       ),
@@ -269,61 +324,43 @@ class _HomeScreenState extends State<HomeScreen>
   ) async {
     final theme = Theme.of(context);
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color sheetColor = isDark
-        ? const Color(0xFF100D16)
-        : Colors.white;
+    final Color sheetColor = isDark ? const Color(0xFF100D16) : Colors.white;
 
-    final Color primaryText = isDark
-        ? Colors.white
-        : const Color(0xFF17131D);
+    final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
         ? const Color(0xFF81788D)
         : const Color(0xFF756D7D);
 
-    final Set<String> selectedIds =
-        currentSongs.map((song) => song.id).toSet();
+    final Set<String> selectedIds = currentSongs.map((song) => song.id).toSet();
 
     return showModalBottomSheet<List<SongModel>>(
       context: context,
       backgroundColor: sheetColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(26),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
           builder: (context, setState) {
             return SafeArea(
               child: SizedBox(
-                height:
-                    MediaQuery.of(context).size.height * 0.78,
+                height: MediaQuery.of(context).size.height * 0.78,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    18,
-                    14,
-                    18,
-                    18,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Center(
                         child: Container(
                           width: 42,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: secondaryText.withValues(
-                              alpha: 0.35,
-                            ),
-                            borderRadius:
-                                BorderRadius.circular(10),
+                            color: secondaryText.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
@@ -334,16 +371,14 @@ class _HomeScreenState extends State<HomeScreen>
                         children: [
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   'Add Songs',
                                   style: TextStyle(
                                     color: primaryText,
                                     fontSize: 20,
-                                    fontWeight:
-                                        FontWeight.w800,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -360,36 +395,29 @@ class _HomeScreenState extends State<HomeScreen>
 
                           GestureDetector(
                             onTap: () {
-                              final result = allSongs
+                              final result = _homeSongs
                                   .where(
-                                    (song) =>
-                                        selectedIds
-                                            .contains(song.id),
+                                    (song) => selectedIds.contains(song.id),
                                   )
                                   .toList();
 
-                              Navigator.of(sheetContext)
-                                  .pop(result);
+                              Navigator.of(sheetContext).pop(result);
                             },
                             child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 14,
                                 vertical: 9,
                               ),
                               decoration: BoxDecoration(
-                                color:
-                                    const Color(0xFF7A45C4),
-                                borderRadius:
-                                    BorderRadius.circular(14),
+                                color: const Color(0xFF7A45C4),
+                                borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Text(
                                 'Done',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 10,
-                                  fontWeight:
-                                      FontWeight.w700,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                             ),
@@ -401,73 +429,49 @@ class _HomeScreenState extends State<HomeScreen>
 
                       Expanded(
                         child: ListView.separated(
-                          physics:
-                              const BouncingScrollPhysics(),
-                          itemCount: allSongs.length,
-                          separatorBuilder:
-                              (context, index) =>
-                                  const SizedBox(height: 7),
-                          itemBuilder:
-                              (context, index) {
-                            final song = allSongs[index];
+                          physics: const BouncingScrollPhysics(),
+                          itemCount: _homeSongs.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 7),
+                          itemBuilder: (context, index) {
+                            final song = _homeSongs[index];
 
-                            final bool selected =
-                                selectedIds.contains(song.id);
+                            final bool selected = selectedIds.contains(song.id);
 
                             return Material(
                               color: Colors.transparent,
                               child: InkWell(
-                                borderRadius:
-                                    BorderRadius.circular(15),
+                                borderRadius: BorderRadius.circular(15),
                                 onTap: () {
                                   setState(() {
                                     if (selected) {
-                                      selectedIds
-                                          .remove(song.id);
+                                      selectedIds.remove(song.id);
                                     } else {
                                       selectedIds.add(song.id);
                                     }
                                   });
                                 },
                                 child: Container(
-                                  padding:
-                                      const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: selected
-                                        ? const Color(
-                                            0xFF241735,
-                                          )
+                                        ? const Color(0xFF241735)
                                         : isDark
-                                            ? const Color(
-                                                0xFF17131F,
-                                              )
-                                            : const Color(
-                                                0xFFF7F3FA,
-                                              ),
-                                    borderRadius:
-                                        BorderRadius.circular(
-                                      15,
-                                    ),
+                                        ? const Color(0xFF17131F)
+                                        : const Color(0xFFF7F3FA),
+                                    borderRadius: BorderRadius.circular(15),
                                     border: Border.all(
                                       color: selected
-                                          ? const Color(
-                                              0xFF7A45C4,
-                                            )
+                                          ? const Color(0xFF7A45C4)
                                           : isDark
-                                              ? const Color(
-                                                  0xFF2C2535,
-                                                )
-                                              : const Color(
-                                                  0xFFE5DFE9,
-                                                ),
+                                          ? const Color(0xFF2C2535)
+                                          : const Color(0xFFE5DFE9),
                                     ),
                                   ),
                                   child: Row(
                                     children: [
                                       ClipRRect(
-                                        borderRadius:
-                                            BorderRadius
-                                                .circular(10),
+                                        borderRadius: BorderRadius.circular(10),
                                         child: _songImage(
                                           song.imagePath,
                                           width: 50,
@@ -475,41 +479,30 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       ),
 
-                                      const SizedBox(
-                                          width: 10),
+                                      const SizedBox(width: 10),
 
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment:
-                                              CrossAxisAlignment
-                                                  .start,
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               song.title,
                                               maxLines: 1,
-                                              overflow:
-                                                  TextOverflow
-                                                      .ellipsis,
+                                              overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
-                                                color:
-                                                    primaryText,
+                                                color: primaryText,
                                                 fontSize: 11,
-                                                fontWeight:
-                                                    FontWeight
-                                                        .w700,
+                                                fontWeight: FontWeight.w700,
                                               ),
                                             ),
-                                            const SizedBox(
-                                                height: 3),
+                                            const SizedBox(height: 3),
                                             Text(
                                               song.artist,
                                               maxLines: 1,
-                                              overflow:
-                                                  TextOverflow
-                                                      .ellipsis,
+                                              overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
-                                                color:
-                                                    secondaryText,
+                                                color: secondaryText,
                                                 fontSize: 8.5,
                                               ),
                                             ),
@@ -517,19 +510,15 @@ class _HomeScreenState extends State<HomeScreen>
                                         ),
                                       ),
 
-                                      const SizedBox(
-                                          width: 8),
+                                      const SizedBox(width: 8),
 
                                       Icon(
                                         selected
-                                            ? Icons
-                                                .check_circle_rounded
+                                            ? Icons.check_circle_rounded
                                             : Icons
-                                                .radio_button_unchecked_rounded,
+                                                  .radio_button_unchecked_rounded,
                                         color: selected
-                                            ? const Color(
-                                                0xFFB77CFF,
-                                              )
+                                            ? const Color(0xFFB77CFF)
                                             : secondaryText,
                                         size: 23,
                                       ),
@@ -561,11 +550,9 @@ class _HomeScreenState extends State<HomeScreen>
     final player = PlayerScope.of(context);
     final theme = Theme.of(context);
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color backgroundColor =
-        theme.scaffoldBackgroundColor;
+    final Color backgroundColor = theme.scaffoldBackgroundColor;
 
     final Color cardColor = isDark
         ? const Color(0xFF12101A)
@@ -579,9 +566,7 @@ class _HomeScreenState extends State<HomeScreen>
         ? const Color(0xFF292231)
         : const Color(0xFFE3DDE9);
 
-    final Color primaryText = isDark
-        ? Colors.white
-        : const Color(0xFF17131D);
+    final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
         ? const Color(0xFF797283)
@@ -609,7 +594,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
                   child: _buildHeader(
                     context,
                     isDark,
@@ -618,198 +603,272 @@ class _HomeScreenState extends State<HomeScreen>
                     borderColor,
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
                 Expanded(
                   child: CustomScrollView(
                     physics: const BouncingScrollPhysics(),
                     slivers: [
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(
-                          16,
-                          0,
-                          16,
-                          140,
-                        ),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate(
-                      [
-                        _buildHero(context),
+                        padding: const EdgeInsets.fromLTRB(10, 0, 10, 140),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            _buildHero(context),
 
-                        const SizedBox(height: 18),
-
-                        _buildSectionTitle(
-                          title: 'Quick Access',
-                          primaryText: primaryText,
-                          accentColor:
-                              theme.colorScheme.primary,
-                        ),
-
-                        const SizedBox(height: 9),
-
-                        _buildQuickAccess(
-                          context,
-                          cardColor,
-                          borderColor,
-                          primaryText,
-                          secondaryText,
-                        ),
-
-                        const SizedBox(height: 19),
-
-                        _buildSectionTitle(
-                          title: 'Continue Listening',
-                          trailing: 'See all',
-                          primaryText: primaryText,
-                          accentColor:
-                              theme.colorScheme.primary,
-                          onTrailingTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const LibraryScreen(
-                                  initialFilter: 1,
-                                ),
+                            if (_isLoadingHomeSongs ||
+                                _homeSongsError != null) ...[
+                              const SizedBox(height: 12),
+                              _buildOnlineStatus(
+                                context,
+                                cardColor,
+                                borderColor,
+                                primaryText,
+                                secondaryText,
                               ),
-                            );
-                          },
+                            ],
+
+                            const SizedBox(height: 15),
+
+                            _buildSectionTitle(
+                              title: 'Quick Access',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildQuickAccess(
+                              context,
+                              cardColor,
+                              borderColor,
+                              primaryText,
+                              secondaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Continue Listening',
+                              trailing: 'See all',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        const LibraryScreen(initialFilter: 1),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildContinueListening(
+                              context,
+                              player,
+                              cardColor,
+                              selectedCardColor,
+                              borderColor,
+                              primaryText,
+                              secondaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Made For You',
+                              trailing: 'See all',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                _openAllSongs(context);
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildMadeForYou(
+                              context,
+                              player,
+                              primaryText,
+                              secondaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Trending India',
+                              trailing: 'See all',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                _openAllSongs(context);
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildTrending(
+                              context,
+                              player,
+                              cardColor,
+                              selectedCardColor,
+                              borderColor,
+                              primaryText,
+                              secondaryText,
+                              tertiaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Popular Playlists',
+                              trailing: 'See all',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                _showAllPlaylists(context);
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildPopularPlaylists(context, player, isDark),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Mood & Vibes',
+                              trailing: 'Explore',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                _showAllMoods(context);
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildMoodVibes(
+                              context,
+                              player,
+                              cardColor,
+                              borderColor,
+                              primaryText,
+                              secondaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Full Songs',
+                              trailing: 'See all',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                _openAllSongs(context);
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildFreshPicks(
+                              context,
+                              player,
+                              primaryText,
+                              secondaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Popular Artists',
+                              trailing: 'Explore',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LibraryScreen(
+                                      initialTab: 3,
+                                      showAllCollections: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildPopularArtists(
+                              context,
+                              player,
+                              cardColor,
+                              borderColor,
+                              primaryText,
+                              secondaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Albums For You',
+                              trailing: 'See all',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => const LibraryScreen(
+                                      initialTab: 2,
+                                      showAllCollections: true,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildAlbumsForYou(
+                              context,
+                              player,
+                              cardColor,
+                              selectedCardColor,
+                              borderColor,
+                              primaryText,
+                              secondaryText,
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            _buildSectionTitle(
+                              title: 'Recommended For You',
+                              trailing: 'See all',
+                              primaryText: primaryText,
+                              accentColor: theme.colorScheme.primary,
+                              onTrailingTap: () {
+                                _openAllSongs(context);
+                              },
+                            ),
+
+                            const SizedBox(height: 7),
+
+                            _buildRecommended(
+                              context,
+                              player,
+                              cardColor,
+                              selectedCardColor,
+                              borderColor,
+                              primaryText,
+                              secondaryText,
+                              tertiaryText,
+                            ),
+
+                            const SizedBox(height: 10),
+                          ]),
                         ),
-
-                        const SizedBox(height: 9),
-
-                        _buildContinueListening(
-                          context,
-                          player,
-                          cardColor,
-                          selectedCardColor,
-                          borderColor,
-                          primaryText,
-                          secondaryText,
-                        ),
-
-                        const SizedBox(height: 19),
-
-                        _buildSectionTitle(
-                          title: 'Made For You',
-                          trailing: 'See all',
-                          primaryText: primaryText,
-                          accentColor:
-                              theme.colorScheme.primary,
-                          onTrailingTap: () {
-                            _openAllSongs(context);
-                          },
-                        ),
-
-                        const SizedBox(height: 9),
-
-                        _buildMadeForYou(
-                          context,
-                          player,
-                          primaryText,
-                          secondaryText,
-                        ),
-
-                        const SizedBox(height: 19),
-
-                        _buildSectionTitle(
-                          title: 'Trending Now',
-                          trailing: 'See all',
-                          primaryText: primaryText,
-                          accentColor:
-                              theme.colorScheme.primary,
-                          onTrailingTap: () {
-                            _openAllSongs(context);
-                          },
-                        ),
-
-                        const SizedBox(height: 9),
-
-                        _buildTrending(
-                          context,
-                          player,
-                          cardColor,
-                          selectedCardColor,
-                          borderColor,
-                          primaryText,
-                          secondaryText,
-                          tertiaryText,
-                        ),
-
-                        const SizedBox(height: 19),
-
-                        _buildSectionTitle(
-                          title: 'Popular Playlists',
-                          trailing: 'See all',
-                          primaryText: primaryText,
-                          accentColor:
-                              theme.colorScheme.primary,
-                          onTrailingTap: () {
-                            _showAllPlaylists(context);
-                          },
-                        ),
-
-                        const SizedBox(height: 9),
-
-                        _buildPopularPlaylists(
-                          context,
-                          player,
-                          isDark,
-                        ),
-
-                        const SizedBox(height: 19),
-
-                        _buildSectionTitle(
-                          title: 'Mood & Vibes',
-                          trailing: 'Explore',
-                          primaryText: primaryText,
-                          accentColor:
-                              theme.colorScheme.primary,
-                          onTrailingTap: () {
-                            _showAllMoods(context);
-                          },
-                        ),
-
-                        const SizedBox(height: 9),
-
-                        _buildMoodVibes(
-                          context,
-                          player,
-                          cardColor,
-                          borderColor,
-                          primaryText,
-                          secondaryText,
-                        ),
-
-                        const SizedBox(height: 19),
-
-                        _buildSectionTitle(
-                          title: 'Recommended For You',
-                          trailing: 'See all',
-                          primaryText: primaryText,
-                          accentColor:
-                              theme.colorScheme.primary,
-                          onTrailingTap: () {
-                            _openAllSongs(context);
-                          },
-                        ),
-
-                        const SizedBox(height: 9),
-
-                        _buildRecommended(
-                          context,
-                          player,
-                          cardColor,
-                          selectedCardColor,
-                          borderColor,
-                          primaryText,
-                          secondaryText,
-                          tertiaryText,
-                        ),
-
-                        const SizedBox(height: 10),
-                      ],
-                    ),
-                  ),
-                ),
+                      ),
                     ],
                   ),
                 ),
@@ -818,6 +877,94 @@ class _HomeScreenState extends State<HomeScreen>
           ),
         );
       },
+    );
+  }
+
+  // ============================================================
+  // ONLINE MUSIC STATUS
+  // ============================================================
+
+  Widget _buildOnlineStatus(
+    BuildContext context,
+    Color cardColor,
+    Color borderColor,
+    Color primaryText,
+    Color secondaryText,
+  ) {
+    if (_isLoadingHomeSongs) {
+      return Container(
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(15),
+          border: Border.all(color: borderColor),
+        ),
+        child: Row(
+          children: [
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFB77CFF),
+              ),
+            ),
+            const SizedBox(width: 11),
+            Text(
+              'Updating your music feed…',
+              style: TextStyle(
+                color: secondaryText,
+                fontSize: 10.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            color: Color(0xFFB77CFF),
+            size: 19,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _homeSongsError ?? 'Unable to update music.',
+                  style: TextStyle(
+                    color: primaryText,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Showing downloaded songs for now.',
+                  style: TextStyle(color: secondaryText, fontSize: 8.5),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _loadHomeSongs(forceRefresh: true),
+            child: const Text('Retry'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -855,13 +1002,13 @@ class _HomeScreenState extends State<HomeScreen>
         : const Color(0xFF4F4858);
 
     return SizedBox(
-      height: 52,
+      height: 46,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 52,
-            height: 52,
+            width: 46,
+            height: 46,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(15),
               boxShadow: [
@@ -876,44 +1023,35 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             child: Image.asset(
               'assets/images/sonexa_logo.png',
-              width: 52,
-              height: 52,
+              width: 46,
+              height: 46,
               fit: BoxFit.contain,
-              errorBuilder: (
-                context,
-                error,
-                stackTrace,
-              ) {
+              errorBuilder: (context, error, stackTrace) {
                 return Container(
                   decoration: BoxDecoration(
-                    borderRadius:
-                        BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(15),
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFFB77CFF),
-                        Color(0xFF7138C8),
-                      ],
+                      colors: [Color(0xFFB77CFF), Color(0xFF7138C8)],
                     ),
                   ),
                   child: const Icon(
                     Icons.music_note_rounded,
                     color: Colors.white,
-                    size: 26,
+                    size: 23,
                   ),
                 );
               },
             ),
           ),
 
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
 
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'SONEXA',
@@ -921,20 +1059,20 @@ class _HomeScreenState extends State<HomeScreen>
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: primaryText,
-                    fontSize: 22,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0.4,
                     height: 1.05,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 3),
                 Text(
                   greeting,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: secondaryText,
-                    fontSize: 11,
+                    fontSize: 10,
                     fontWeight: FontWeight.w500,
                     height: 1.0,
                   ),
@@ -948,26 +1086,21 @@ class _HomeScreenState extends State<HomeScreen>
           GestureDetector(
             onTap: () {
               Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) =>
-                      const NotificationsScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const NotificationsScreen()),
               );
             },
             child: Container(
-              width: 50,
-              height: 50,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 color: notificationBackground,
                 borderRadius: BorderRadius.circular(15),
-                border: Border.all(
-                  color: borderColor,
-                ),
+                border: Border.all(color: borderColor),
               ),
               child: Icon(
                 Icons.notifications_none_rounded,
                 color: notificationIcon,
-                size: 23,
+                size: 21,
               ),
             ),
           ),
@@ -982,33 +1115,25 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHero(BuildContext context) {
     return SizedBox(
-      height: 185,
+      height: 172,
       child: PageView.builder(
         controller: _heroController,
         itemBuilder: (context, index) {
           final page = index % _heroCount;
 
           return Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 1),
-            child: _buildHeroCard(
-              context,
-              page,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 1),
+            child: _buildHeroCard(context, page),
           );
         },
       ),
     );
   }
 
-  Widget _buildHeroCard(
-    BuildContext context,
-    int page,
-  ) {
+  Widget _buildHeroCard(BuildContext context, int page) {
     final theme = Theme.of(context);
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
     final Color heroTitleColor = isDark
         ? Colors.white
@@ -1030,51 +1155,35 @@ class _HomeScreenState extends State<HomeScreen>
       {
         'label': 'SONEXA MIX',
         'title': 'Your music,\nyour moment.',
-        'subtitle':
-            'A personalized mix made for your listening mood.',
+        'subtitle': 'A personalized mix made for your listening mood.',
         'image': 'assets/images/hero.logo.png',
-        'song': allSongs.isNotEmpty
-            ? allSongs[0]
-            : null,
+        'song': _homeSongs.isNotEmpty ? _homeSongs[0] : null,
       },
       {
         'label': 'TRENDING TRACKS',
         'title': 'What’s hot\nright now.',
-        'subtitle':
-            'Listen to the tracks everyone is loving right now.',
-        'image':
-            'assets/images/headphone_hero.png',
-        'song': allSongs.length > 1
-            ? allSongs[1]
-            : null,
+        'subtitle': 'Listen to the tracks everyone is loving right now.',
+        'image': 'assets/images/headphone_hero.png',
+        'song': _homeSongs.length > 1 ? _homeSongs[1] : null,
       },
       {
         'label': 'STARGAZING ESSENTIALS',
         'title': 'Music for\nlate nights.',
-        'subtitle':
-            'Slow down, relax and enjoy your favorite sounds.',
-        'image':
-            'assets/images/galaxy_hero.png',
-        'song': allSongs.length > 7
-            ? allSongs[7]
-            : null,
+        'subtitle': 'Slow down, relax and enjoy your favorite sounds.',
+        'image': 'assets/images/galaxy_hero.png',
+        'song': _homeSongs.length > 7 ? _homeSongs[7] : null,
       },
     ];
 
     final item = data[page];
 
-    final SongModel? song =
-        item['song'] as SongModel?;
+    final SongModel? song = item['song'] as SongModel?;
 
     return GestureDetector(
       onTap: () {
         if (song == null) return;
 
-        _playSong(
-          context,
-          song,
-          openPlayer: true,
-        );
+        _playSong(context, song, openPlayer: true);
       },
       child: Container(
         decoration: BoxDecoration(
@@ -1083,23 +1192,13 @@ class _HomeScreenState extends State<HomeScreen>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDark
-                ? const [
-                    Color(0xFF28154A),
-                    Color(0xFF120D1D),
-                  ]
-                : const [
-                    Color(0xFFEDE1FA),
-                    Color(0xFFF9F6FC),
-                  ],
+                ? const [Color(0xFF28154A), Color(0xFF120D1D)]
+                : const [Color(0xFFEDE1FA), Color(0xFFF9F6FC)],
           ),
-          border: Border.all(
-            color: heroBorderColor,
-          ),
+          border: Border.all(color: heroBorderColor),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? const Color(0x331F0B3D)
-                  : const Color(0x221F0B3D),
+              color: isDark ? const Color(0x331F0B3D) : const Color(0x221F0B3D),
               blurRadius: 22,
               offset: const Offset(0, 10),
             ),
@@ -1117,18 +1216,10 @@ class _HomeScreenState extends State<HomeScreen>
                   opacity: isDark ? 0.88 : 0.82,
                   child: Image.asset(
                     item['image'] as String,
-                    width:
-                        page == 1 ? 160 : 174,
-                    height:
-                        page == 1 ? 176 : 188,
-                    fit: page == 1
-                        ? BoxFit.contain
-                        : BoxFit.cover,
-                    errorBuilder: (
-                      context,
-                      error,
-                      stackTrace,
-                    ) {
+                    width: page == 1 ? 150 : 162,
+                    height: page == 1 ? 164 : 176,
+                    fit: page == 1 ? BoxFit.contain : BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
                       return const SizedBox.shrink();
                     },
                   ),
@@ -1143,12 +1234,8 @@ class _HomeScreenState extends State<HomeScreen>
                   height: 170,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color:
-                        const Color(0xFF9B6BFF)
-                            .withValues(
-                      alpha:
-                          isDark ? 0.10 : 0.08,
-                    ),
+                    color: const Color(0xFF9B6BFF)
+                        .withValues(alpha: isDark ? 0.10 : 0.08),
                   ),
                 ),
               ),
@@ -1180,24 +1267,16 @@ class _HomeScreenState extends State<HomeScreen>
               ),
 
               Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(
-                  18,
-                  16,
-                  18,
-                  15,
-                ),
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       item['label'] as String,
                       style: TextStyle(
                         color: heroLabelColor,
                         fontSize: 8,
-                        fontWeight:
-                            FontWeight.w800,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: 1.4,
                       ),
                     ),
@@ -1208,10 +1287,9 @@ class _HomeScreenState extends State<HomeScreen>
                       item['title'] as String,
                       style: TextStyle(
                         color: heroTitleColor,
-                        fontSize: 22,
+                        fontSize: 20,
                         height: 1.05,
-                        fontWeight:
-                            FontWeight.w800,
+                        fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
                       ),
                     ),
@@ -1223,12 +1301,10 @@ class _HomeScreenState extends State<HomeScreen>
                       child: Text(
                         item['subtitle'] as String,
                         maxLines: 2,
-                        overflow:
-                            TextOverflow.ellipsis,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color:
-                              heroSubtitleColor,
-                          fontSize: 9.5,
+                          color: heroSubtitleColor,
+                          fontSize: 9,
                           height: 1.35,
                         ),
                       ),
@@ -1237,52 +1313,36 @@ class _HomeScreenState extends State<HomeScreen>
                     const Spacer(),
 
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 12,
                         vertical: 7,
                       ),
                       decoration: BoxDecoration(
-                        gradient:
-                            const LinearGradient(
-                          begin:
-                              Alignment.topLeft,
-                          end:
-                              Alignment.bottomRight,
-                          colors: [
-                            Color(0xFF7040A8),
-                            Color(0xFF45226F),
-                          ],
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF7040A8), Color(0xFF45226F)],
                         ),
-                        borderRadius:
-                            BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color:
-                              const Color(0xFF8052B8),
+                          color: const Color(0xFF8052B8),
                           width: 0.6,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: isDark
-                                ? const Color(
-                                    0x542B124F,
-                                  )
-                                : const Color(
-                                    0x302B124F,
-                                  ),
+                                ? const Color(0x542B124F)
+                                : const Color(0x302B124F),
                             blurRadius: 10,
-                            offset:
-                                const Offset(0, 4),
+                            offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: const Row(
-                        mainAxisSize:
-                            MainAxisSize.min,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            Icons
-                                .play_arrow_rounded,
+                            Icons.play_arrow_rounded,
                             color: Colors.white,
                             size: 14,
                           ),
@@ -1292,8 +1352,7 @@ class _HomeScreenState extends State<HomeScreen>
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 9.5,
-                              fontWeight:
-                                  FontWeight.w700,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
@@ -1327,7 +1386,7 @@ class _HomeScreenState extends State<HomeScreen>
             title,
             style: TextStyle(
               color: primaryText,
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               letterSpacing: -0.3,
             ),
@@ -1340,7 +1399,7 @@ class _HomeScreenState extends State<HomeScreen>
               trailing,
               style: TextStyle(
                 color: accentColor,
-                fontSize: 10.5,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1367,8 +1426,7 @@ class _HomeScreenState extends State<HomeScreen>
             icon: Icons.favorite_rounded,
             title: 'Liked Songs',
             subtitle: 'Your favorites',
-            iconColor:
-                const Color(0xFFFC578E),
+            iconColor: const Color(0xFFFC578E),
             cardColor: cardColor,
             borderColor: borderColor,
             primaryText: primaryText,
@@ -1376,10 +1434,7 @@ class _HomeScreenState extends State<HomeScreen>
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const LibraryScreen(
-                    initialFilter: 0,
-                  ),
+                  builder: (_) => const LibraryScreen(initialFilter: 0),
                 ),
               );
             },
@@ -1391,8 +1446,7 @@ class _HomeScreenState extends State<HomeScreen>
             icon: Icons.history_rounded,
             title: 'Recently Played',
             subtitle: 'Listen again',
-            iconColor:
-                const Color(0xFFB77CFF),
+            iconColor: const Color(0xFFB77CFF),
             cardColor: cardColor,
             borderColor: borderColor,
             primaryText: primaryText,
@@ -1400,10 +1454,7 @@ class _HomeScreenState extends State<HomeScreen>
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const LibraryScreen(
-                    initialFilter: 1,
-                  ),
+                  builder: (_) => const LibraryScreen(initialFilter: 1),
                 ),
               );
             },
@@ -1427,69 +1478,49 @@ class _HomeScreenState extends State<HomeScreen>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius:
-            BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(17),
         onTap: onTap,
         child: Container(
-          height: 68,
-          padding: const EdgeInsets.all(10),
+          height: 62,
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
             color: cardColor,
-            borderRadius:
-                BorderRadius.circular(17),
-            border: Border.all(
-              color: borderColor,
-            ),
+            borderRadius: BorderRadius.circular(17),
+            border: Border.all(color: borderColor),
           ),
           child: Row(
             children: [
               Container(
-                width: 39,
-                height: 39,
+                width: 36,
+                height: 36,
                 decoration: BoxDecoration(
-                  color:
-                      iconColor.withValues(
-                    alpha: 0.12,
-                  ),
-                  borderRadius:
-                      BorderRadius.circular(12),
+                  color: iconColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: 19,
-                ),
+                child: Icon(icon, color: iconColor, size: 18),
               ),
               const SizedBox(width: 9),
               Expanded(
                 child: Column(
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
                       maxLines: 1,
-                      overflow:
-                          TextOverflow.ellipsis,
+                      overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: primaryText,
-                        fontSize: 11,
-                        fontWeight:
-                            FontWeight.w700,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
                       maxLines: 1,
-                      overflow:
-                          TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: secondaryText,
-                        fontSize: 8.5,
-                      ),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: secondaryText, fontSize: 8),
                     ),
                   ],
                 ),
@@ -1514,16 +1545,11 @@ class _HomeScreenState extends State<HomeScreen>
     Color primaryText,
     Color secondaryText,
   ) {
-    final recentIds = player.recentlyPlayed
-        .map((song) => song.id)
-        .toSet();
+    final recentIds = player.recentlyPlayed.map((song) => song.id).toSet();
 
     final List<SongModel> songs = [
       ...player.recentlyPlayed,
-      ...allSongs.where(
-        (song) =>
-            !recentIds.contains(song.id),
-      ),
+      ..._homeSongs.where((song) => !recentIds.contains(song.id)),
     ];
 
     if (songs.isEmpty) {
@@ -1532,26 +1558,19 @@ class _HomeScreenState extends State<HomeScreen>
         child: Center(
           child: Text(
             'Start listening to discover your music.',
-            style: TextStyle(
-              color: secondaryText,
-              fontSize: 11,
-            ),
+            style: TextStyle(color: secondaryText, fontSize: 11),
           ),
         ),
       );
     }
 
     return SizedBox(
-      height: 155,
+      height: 145,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics:
-            const BouncingScrollPhysics(),
-        itemCount:
-            songs.length > 5 ? 5 : songs.length,
-        separatorBuilder:
-            (context, index) =>
-                const SizedBox(width: 9),
+        physics: const BouncingScrollPhysics(),
+        itemCount: songs.length > 5 ? 5 : songs.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 9),
         itemBuilder: (context, index) {
           return _continueLargeCard(
             context,
@@ -1578,62 +1597,43 @@ class _HomeScreenState extends State<HomeScreen>
     Color primaryText,
     Color secondaryText,
   ) {
-    final bool isCurrent =
-        player.currentSongData.id == song.id;
+    final bool isCurrent = player.currentSongData.id == song.id;
 
     double progress = 0.0;
 
-    if (isCurrent &&
-        player.duration.inMilliseconds > 0) {
-      progress =
-          player.progress.clamp(0.0, 1.0);
+    if (isCurrent && player.duration.inMilliseconds > 0) {
+      progress = player.progress.clamp(0.0, 1.0);
     }
 
     return GestureDetector(
       onTap: () {
-        _playSong(
-          context,
-          song,
-          openPlayer: true,
-        );
+        _playSong(context, song, openPlayer: true);
       },
       child: SizedBox(
-        width: 132,
+        width: 124,
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: isCurrent
-                ? selectedCardColor
-                : cardColor,
-            borderRadius:
-                BorderRadius.circular(17),
+            color: isCurrent ? selectedCardColor : cardColor,
+            borderRadius: BorderRadius.circular(17),
             border: Border.all(
-              color: isCurrent
-                  ? const Color(0xFF493064)
-                  : borderColor,
+              color: isCurrent ? const Color(0xFF493064) : borderColor,
             ),
           ),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius:
-                        BorderRadius.circular(11),
-                    child: _songImage(
-                      song.imagePath,
-                      width: 114,
-                      height: 88,
-                    ),
+                    borderRadius: BorderRadius.circular(11),
+                    child: _songImage(song.imagePath, width: 106, height: 81),
                   ),
                   Positioned(
                     right: 5,
                     bottom: 5,
                     child: _playCircle(
-                      isPlaying: isCurrent &&
-                          player.isPlaying,
+                      isPlaying: isCurrent && player.isPlaying,
                     ),
                   ),
                 ],
@@ -1642,39 +1642,28 @@ class _HomeScreenState extends State<HomeScreen>
               Text(
                 song.title,
                 maxLines: 1,
-                overflow:
-                    TextOverflow.ellipsis,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: primaryText,
-                  fontSize: 10.5,
-                  fontWeight:
-                      FontWeight.w700,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 song.artist,
                 maxLines: 1,
-                overflow:
-                    TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: secondaryText,
-                  fontSize: 8,
-                ),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: secondaryText, fontSize: 8),
               ),
               const Spacer(),
               ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(5),
+                borderRadius: BorderRadius.circular(5),
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 3,
-                  backgroundColor:
-                      const Color(0xFF30293A),
-                  valueColor:
-                      const AlwaysStoppedAnimation(
-                    Color(0xFFB77CFF),
-                  ),
+                  backgroundColor: const Color(0xFF30293A),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFFB77CFF)),
                 ),
               ),
             ],
@@ -1695,25 +1684,20 @@ class _HomeScreenState extends State<HomeScreen>
     Color secondaryText,
   ) {
     return SizedBox(
-      height: 145,
+      height: 136,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics:
-            const BouncingScrollPhysics(),
-        itemCount: allSongs.length,
-        separatorBuilder:
-            (context, index) =>
-                const SizedBox(width: 9),
+        physics: const BouncingScrollPhysics(),
+        itemCount: _homeSongs.length > 15 ? 15 : _homeSongs.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 9),
         itemBuilder: (context, index) {
-          final song = allSongs[index];
+          final song = _homeSongs[index];
 
           return _largeSongCard(
             context,
             player,
             song,
-            _madeForYouCategories[
-                index %
-                    _madeForYouCategories.length],
+            _madeForYouCategories[index % _madeForYouCategories.length],
             primaryText,
             secondaryText,
           );
@@ -1730,42 +1714,27 @@ class _HomeScreenState extends State<HomeScreen>
     Color primaryText,
     Color secondaryText,
   ) {
-    final isPlaying =
-        player.currentSongData.id ==
-                song.id &&
-            player.isPlaying;
+    final isPlaying = player.currentSongData.id == song.id && player.isPlaying;
 
     return GestureDetector(
       onTap: () {
-        _playSong(
-          context,
-          song,
-          openPlayer: true,
-        );
+        _playSong(context, song, openPlayer: true);
       },
       child: SizedBox(
-        width: 120,
+        width: 114,
         child: Column(
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Stack(
               children: [
                 ClipRRect(
-                  borderRadius:
-                      BorderRadius.circular(14),
-                  child: _songImage(
-                    song.imagePath,
-                    width: 120,
-                    height: 102,
-                  ),
+                  borderRadius: BorderRadius.circular(14),
+                  child: _songImage(song.imagePath, width: 114, height: 94),
                 ),
                 Positioned(
                   right: 5,
                   bottom: 5,
-                  child: _playCircle(
-                    isPlaying: isPlaying,
-                  ),
+                  child: _playCircle(isPlaying: isPlaying),
                 ),
               ],
             ),
@@ -1773,25 +1742,19 @@ class _HomeScreenState extends State<HomeScreen>
             Text(
               category,
               maxLines: 1,
-              overflow:
-                  TextOverflow.ellipsis,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: primaryText,
                 fontSize: 10,
-                fontWeight:
-                    FontWeight.w700,
+                fontWeight: FontWeight.w700,
               ),
             ),
             const SizedBox(height: 2),
             Text(
               song.title,
               maxLines: 1,
-              overflow:
-                  TextOverflow.ellipsis,
-              style: TextStyle(
-                color: secondaryText,
-                fontSize: 8,
-              ),
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: secondaryText, fontSize: 8),
             ),
           ],
         ),
@@ -1813,20 +1776,20 @@ class _HomeScreenState extends State<HomeScreen>
     Color secondaryText,
     Color tertiaryText,
   ) {
-    final songs = allSongs.length > 5
-        ? allSongs.take(5).toList()
+    final List<SongModel> source = _indianSongs.isNotEmpty
+        ? _indianSongs
         : allSongs;
+    final List<SongModel> songs = source.length > 10
+        ? source.take(10).toList()
+        : source;
 
     return SizedBox(
-      height: 91,
+      height: 84,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics:
-            const BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         itemCount: songs.length,
-        separatorBuilder:
-            (context, index) =>
-                const SizedBox(width: 9),
+        separatorBuilder: (context, index) => const SizedBox(width: 9),
         itemBuilder: (context, index) {
           return _trendingCard(
             context,
@@ -1857,31 +1820,20 @@ class _HomeScreenState extends State<HomeScreen>
     Color secondaryText,
     Color tertiaryText,
   ) {
-    final bool current =
-        player.currentSongData.id ==
-            song.id;
+    final bool current = player.currentSongData.id == song.id;
 
     return GestureDetector(
       onTap: () {
-        _playSong(
-          context,
-          song,
-          openPlayer: true,
-        );
+        _playSong(context, song, openPlayer: true);
       },
       child: Container(
-        width: 235,
+        width: 224,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: current
-              ? selectedCardColor
-              : cardColor,
-          borderRadius:
-              BorderRadius.circular(15),
+          color: current ? selectedCardColor : cardColor,
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: current
-                ? const Color(0xFF493064)
-                : borderColor,
+            color: current ? const Color(0xFF493064) : borderColor,
           ),
         ),
         child: Row(
@@ -1889,75 +1841,50 @@ class _HomeScreenState extends State<HomeScreen>
             SizedBox(
               width: 22,
               child: Text(
-                number
-                    .toString()
-                    .padLeft(2, '0'),
-                textAlign:
-                    TextAlign.center,
+                number.toString().padLeft(2, '0'),
+                textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: current
-                      ? const Color(
-                          0xFFB77CFF,
-                        )
-                      : tertiaryText,
+                  color: current ? const Color(0xFFB77CFF) : tertiaryText,
                   fontSize: 9,
-                  fontWeight:
-                      FontWeight.w700,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
             ),
             const SizedBox(width: 7),
             ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(10),
-              child: _songImage(
-                song.imagePath,
-                width: 56,
-                height: 56,
-              ),
+              borderRadius: BorderRadius.circular(10),
+              child: _songImage(song.imagePath, width: 50, height: 50),
             ),
             const SizedBox(width: 9),
             Expanded(
               child: Column(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     song.title,
                     maxLines: 1,
-                    overflow:
-                        TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: primaryText,
                       fontSize: 11,
-                      fontWeight:
-                          FontWeight.w700,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     song.artist,
                     maxLines: 1,
-                    overflow:
-                        TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: secondaryText,
-                      fontSize: 8.5,
-                    ),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: secondaryText, fontSize: 8.5),
                   ),
                   if (song.album.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text(
                       song.album,
                       maxLines: 1,
-                      overflow:
-                          TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: tertiaryText,
-                        fontSize: 7.5,
-                      ),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tertiaryText, fontSize: 7.5),
                     ),
                   ],
                 ],
@@ -1965,10 +1892,7 @@ class _HomeScreenState extends State<HomeScreen>
             ),
             const SizedBox(width: 5),
             if (current && player.isPlaying)
-              _EqualizerBars(
-                animation:
-                    _equalizerController,
-              )
+              _EqualizerBars(animation: _equalizerController)
             else
               Icon(
                 Icons.play_circle_outline_rounded,
@@ -1990,43 +1914,34 @@ class _HomeScreenState extends State<HomeScreen>
     PlayerController player,
     bool isDark,
   ) {
-    if (allSongs.isEmpty) {
+    if (_homeSongs.isEmpty) {
       return const SizedBox.shrink();
     }
 
     return SizedBox(
-      height: 155,
+      height: 145,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics:
-            const BouncingScrollPhysics(),
-        itemCount: allSongs.length,
-        separatorBuilder:
-            (context, index) =>
-                const SizedBox(width: 10),
+        physics: const BouncingScrollPhysics(),
+        itemCount: _playlistNames.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final String playlistName =
-              _playlistNames[
-                  index % _playlistNames.length];
+              _playlistNames[index % _playlistNames.length];
 
-          final List<SongModel> songs =
-              _getPlaylistSongs(
+          final List<SongModel> songs = _getPlaylistSongs(
             player,
             playlistName,
             index,
           );
 
-          final List<SongModel> previewSongs =
-              songs.isNotEmpty
-                  ? songs
-                  : _playlistSongsForIndex(index);
+          final List<SongModel> previewSongs = songs.isNotEmpty
+              ? songs
+              : _playlistSongsForIndex(index);
 
-          while (previewSongs.length < 3 &&
-              allSongs.isNotEmpty) {
+          while (previewSongs.length < 3 && _homeSongs.isNotEmpty) {
             previewSongs.add(
-              allSongs[
-                  previewSongs.length %
-                      allSongs.length],
+              _homeSongs[previewSongs.length % _homeSongs.length],
             );
           }
 
@@ -2065,9 +1980,7 @@ class _HomeScreenState extends State<HomeScreen>
         ? const Color(0xFF352443)
         : const Color(0xFFE3DDE9);
 
-    final Color titleColor = isDark
-        ? Colors.white
-        : const Color(0xFF17131D);
+    final Color titleColor = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color subtitleColor = isDark
         ? const Color(0xFF7B7385)
@@ -2077,55 +1990,38 @@ class _HomeScreenState extends State<HomeScreen>
       onTap: () {
         if (songs.isEmpty) return;
 
-        _showPlaylistSongs(
-          context,
-          title,
-          songs,
-          player,
-          playlistIndex,
-        );
+        _showPlaylistSongs(context, title, songs, player, playlistIndex);
       },
       child: SizedBox(
-        width: 132,
+        width: 124,
         child: Container(
           padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            borderRadius:
-                BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(17),
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                playlistStart,
-                playlistEnd,
-              ],
+              colors: [playlistStart, playlistEnd],
             ),
-            border: Border.all(
-              color: playlistBorder,
-            ),
+            border: Border.all(color: playlistBorder),
           ),
           child: Column(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
-                height: 88,
+                height: 80,
                 child: Row(
                   children: [
                     Expanded(
                       child: ClipRRect(
-                        borderRadius:
-                            const BorderRadius.only(
-                          topLeft:
-                              Radius.circular(11),
-                          bottomLeft:
-                              Radius.circular(11),
+                        borderRadius: const BorderRadius.only(
+                          topLeft: Radius.circular(11),
+                          bottomLeft: Radius.circular(11),
                         ),
                         child: _songImage(
                           songs[0].imagePath,
-                          width:
-                              double.infinity,
-                          height: 88,
+                          width: double.infinity,
+                          height: 80,
                         ),
                       ),
                     ),
@@ -2135,42 +2031,30 @@ class _HomeScreenState extends State<HomeScreen>
                         children: [
                           Expanded(
                             child: ClipRRect(
-                              borderRadius:
-                                  const BorderRadius.only(
-                                topRight:
-                                    Radius.circular(
-                                  11,
-                                ),
+                              borderRadius: const BorderRadius.only(
+                                topRight: Radius.circular(11),
                               ),
                               child: _songImage(
                                 songs.length > 1
                                     ? songs[1].imagePath
                                     : songs[0].imagePath,
-                                width:
-                                    double.infinity,
-                                height:
-                                    double.infinity,
+                                width: double.infinity,
+                                height: double.infinity,
                               ),
                             ),
                           ),
                           const SizedBox(height: 2),
                           Expanded(
                             child: ClipRRect(
-                              borderRadius:
-                                  const BorderRadius.only(
-                                bottomRight:
-                                    Radius.circular(
-                                  11,
-                                ),
+                              borderRadius: const BorderRadius.only(
+                                bottomRight: Radius.circular(11),
                               ),
                               child: _songImage(
                                 songs.length > 2
                                     ? songs[2].imagePath
                                     : songs[0].imagePath,
-                                width:
-                                    double.infinity,
-                                height:
-                                    double.infinity,
+                                width: double.infinity,
+                                height: double.infinity,
                               ),
                             ),
                           ),
@@ -2184,25 +2068,19 @@ class _HomeScreenState extends State<HomeScreen>
               Text(
                 title,
                 maxLines: 1,
-                overflow:
-                    TextOverflow.ellipsis,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: titleColor,
                   fontSize: 11,
-                  fontWeight:
-                      FontWeight.w700,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 subtitle,
                 maxLines: 1,
-                overflow:
-                    TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: subtitleColor,
-                  fontSize: 8,
-                ),
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: subtitleColor, fontSize: 8),
               ),
             ],
           ),
@@ -2224,39 +2102,29 @@ class _HomeScreenState extends State<HomeScreen>
   ) async {
     final theme = Theme.of(context);
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color sheetColor = isDark
-        ? const Color(0xFF100D16)
-        : Colors.white;
+    final Color sheetColor = isDark ? const Color(0xFF100D16) : Colors.white;
 
-    final Color primaryText = isDark
-        ? Colors.white
-        : const Color(0xFF17131D);
+    final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
         ? const Color(0xFF81788D)
         : const Color(0xFF756D7D);
 
-    List<SongModel> currentSongs =
-        List<SongModel>.from(initialSongs);
+    List<SongModel> currentSongs = List<SongModel>.from(initialSongs);
 
     if (player.playlistNames.contains(playlistName)) {
-      final saved =
-          player.getPlaylistSongs(playlistName);
+      final saved = player.getPlaylistSongs(playlistName);
 
       if (saved.isNotEmpty) {
-        currentSongs =
-            List<SongModel>.from(saved);
+        currentSongs = List<SongModel>.from(saved);
       }
     }
 
     bool isSaved =
         player.playlistNames.contains(playlistName) &&
-        player
-            .getPlaylistSongs(playlistName)
-            .isNotEmpty;
+        player.getPlaylistSongs(playlistName).isNotEmpty;
 
     if (!context.mounted) return;
 
@@ -2265,43 +2133,26 @@ class _HomeScreenState extends State<HomeScreen>
       backgroundColor: sheetColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(26),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (sheetContext) {
         return StatefulBuilder(
-          builder: (
-            context,
-            setSheetState,
-          ) {
+          builder: (context, setSheetState) {
             return SafeArea(
               child: SizedBox(
-                height:
-                    MediaQuery.of(context).size.height *
-                        0.80,
+                height: MediaQuery.of(context).size.height * 0.80,
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    18,
-                    14,
-                    18,
-                    18,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Center(
                         child: Container(
                           width: 42,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: secondaryText
-                                .withValues(
-                              alpha: 0.35,
-                            ),
-                            borderRadius:
-                                BorderRadius.circular(10),
+                            color: secondaryText.withValues(alpha: 0.35),
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
                       ),
@@ -2312,19 +2163,16 @@ class _HomeScreenState extends State<HomeScreen>
                         children: [
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   playlistName,
                                   maxLines: 1,
-                                  overflow:
-                                      TextOverflow.ellipsis,
+                                  overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     color: primaryText,
                                     fontSize: 20,
-                                    fontWeight:
-                                        FontWeight.w800,
+                                    fontWeight: FontWeight.w800,
                                   ),
                                 ),
                                 const SizedBox(height: 4),
@@ -2341,76 +2189,51 @@ class _HomeScreenState extends State<HomeScreen>
 
                           GestureDetector(
                             onTap: () async {
-                              final List<SongModel>?
-                                  selectedSongs =
+                              final List<SongModel>? selectedSongs =
                                   await _showAddSongsDialog(
-                                context,
-                                currentSongs,
-                              );
+                                    context,
+                                    currentSongs,
+                                  );
 
-                              if (selectedSongs ==
-                                  null) {
+                              if (selectedSongs == null) {
                                 return;
                               }
 
                               setSheetState(() {
-                                currentSongs =
-                                    selectedSongs;
+                                currentSongs = selectedSongs;
                               });
                             },
                             child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 10,
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? const Color(
-                                        0xFF241A30,
-                                      )
-                                    : const Color(
-                                        0xFFF1E9F8,
-                                      ),
-                                borderRadius:
-                                    BorderRadius.circular(
-                                  13,
-                                ),
+                                    ? const Color(0xFF241A30)
+                                    : const Color(0xFFF1E9F8),
+                                borderRadius: BorderRadius.circular(13),
                                 border: Border.all(
                                   color: isDark
-                                      ? const Color(
-                                          0xFF3B2B4B,
-                                        )
-                                      : const Color(
-                                          0xFFE0D2EA,
-                                        ),
+                                      ? const Color(0xFF3B2B4B)
+                                      : const Color(0xFFE0D2EA),
                                 ),
                               ),
                               child: Row(
-                                mainAxisSize:
-                                    MainAxisSize.min,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
-                                    Icons
-                                        .add_rounded,
-                                    color:
-                                        const Color(
-                                      0xFFB77CFF,
-                                    ),
+                                    Icons.add_rounded,
+                                    color: const Color(0xFFB77CFF),
                                     size: 17,
                                   ),
-                                  const SizedBox(
-                                      width: 4),
+                                  const SizedBox(width: 4),
                                   Text(
                                     'Add Songs',
-                                    style:
-                                        TextStyle(
-                                      color:
-                                          primaryText,
+                                    style: TextStyle(
+                                      color: primaryText,
                                       fontSize: 9,
-                                      fontWeight:
-                                          FontWeight
-                                              .w700,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -2433,52 +2256,33 @@ class _HomeScreenState extends State<HomeScreen>
                               });
                             },
                             child: Container(
-                              padding:
-                                  const EdgeInsets.symmetric(
+                              padding: const EdgeInsets.symmetric(
                                 horizontal: 11,
                                 vertical: 8,
                               ),
                               decoration: BoxDecoration(
                                 color: isSaved
-                                    ? const Color(
-                                        0xFF2A2035,
-                                      )
-                                    : const Color(
-                                        0xFF7A45C4,
-                                      ),
-                                borderRadius:
-                                    BorderRadius.circular(
-                                  13,
-                                ),
+                                    ? const Color(0xFF2A2035)
+                                    : const Color(0xFF7A45C4),
+                                borderRadius: BorderRadius.circular(13),
                               ),
                               child: Row(
-                                mainAxisSize:
-                                    MainAxisSize.min,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   Icon(
                                     isSaved
-                                        ? Icons
-                                            .check_rounded
-                                        : Icons
-                                            .bookmark_add_outlined,
-                                    color:
-                                        Colors.white,
+                                        ? Icons.check_rounded
+                                        : Icons.bookmark_add_outlined,
+                                    color: Colors.white,
                                     size: 16,
                                   ),
-                                  const SizedBox(
-                                      width: 4),
+                                  const SizedBox(width: 4),
                                   Text(
-                                    isSaved
-                                        ? 'Saved'
-                                        : 'Save',
-                                    style:
-                                        const TextStyle(
-                                      color:
-                                          Colors.white,
+                                    isSaved ? 'Saved' : 'Save',
+                                    style: const TextStyle(
+                                      color: Colors.white,
                                       fontSize: 9,
-                                      fontWeight:
-                                          FontWeight
-                                              .w700,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ],
@@ -2496,179 +2300,110 @@ class _HomeScreenState extends State<HomeScreen>
                                 child: Text(
                                   'No songs in this playlist.',
                                   style: TextStyle(
-                                    color:
-                                        secondaryText,
+                                    color: secondaryText,
                                     fontSize: 11,
                                   ),
                                 ),
                               )
                             : ListView.separated(
-                                physics:
-                                    const BouncingScrollPhysics(),
-                                itemCount:
-                                    currentSongs.length,
-                                separatorBuilder:
-                                    (
-                                      context,
-                                      index,
-                                    ) =>
-                                        const SizedBox(
-                                  height: 7,
-                                ),
-                                itemBuilder:
-                                    (
-                                      context,
-                                      index,
-                                    ) {
-                                  final song =
-                                      currentSongs[
-                                          index];
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: currentSongs.length,
+                                separatorBuilder: (context, index) =>
+                                    const SizedBox(height: 7),
+                                itemBuilder: (context, index) {
+                                  final song = currentSongs[index];
 
                                   return Material(
-                                    color:
-                                        Colors.transparent,
+                                    color: Colors.transparent,
                                     child: InkWell(
-                                      borderRadius:
-                                          BorderRadius
-                                              .circular(
-                                        15,
-                                      ),
+                                      borderRadius: BorderRadius.circular(15),
                                       onTap: () async {
-                                        Navigator.of(
-                                          sheetContext,
-                                        ).pop();
+                                        Navigator.of(sheetContext).pop();
 
                                         await Future.delayed(
-                                          const Duration(
-                                            milliseconds:
-                                                100,
-                                          ),
+                                          const Duration(milliseconds: 100),
                                         );
 
-                                        if (!context
-                                            .mounted) {
+                                        if (!context.mounted) {
                                           return;
                                         }
 
                                         await _playSong(
                                           context,
                                           song,
-                                          openPlayer:
-                                              true,
+                                          openPlayer: true,
+                                          playbackSongs: currentSongs,
                                         );
                                       },
                                       child: Container(
-                                        padding:
-                                            const EdgeInsets
-                                                .all(8),
-                                        decoration:
-                                            BoxDecoration(
+                                        padding: const EdgeInsets.all(8),
+                                        decoration: BoxDecoration(
                                           color: isDark
-                                              ? const Color(
-                                                  0xFF17131F,
-                                                )
-                                              : const Color(
-                                                  0xFFF7F3FA,
-                                                ),
-                                          borderRadius:
-                                              BorderRadius
-                                                  .circular(
+                                              ? const Color(0xFF17131F)
+                                              : const Color(0xFFF7F3FA),
+                                          borderRadius: BorderRadius.circular(
                                             15,
                                           ),
-                                          border:
-                                              Border.all(
+                                          border: Border.all(
                                             color: isDark
-                                                ? const Color(
-                                                    0xFF2C2535,
-                                                  )
-                                                : const Color(
-                                                    0xFFE5DFE9,
-                                                  ),
+                                                ? const Color(0xFF2C2535)
+                                                : const Color(0xFFE5DFE9),
                                           ),
                                         ),
                                         child: Row(
                                           children: [
                                             ClipRRect(
                                               borderRadius:
-                                                  BorderRadius
-                                                      .circular(
-                                                10,
-                                              ),
-                                              child:
-                                                  _songImage(
+                                                  BorderRadius.circular(10),
+                                              child: _songImage(
                                                 song.imagePath,
-                                                width:
-                                                    50,
-                                                height:
-                                                    50,
+                                                width: 50,
+                                                height: 50,
                                               ),
                                             ),
 
-                                            const SizedBox(
-                                                width: 10),
+                                            const SizedBox(width: 10),
 
                                             Expanded(
-                                              child:
-                                                  Column(
+                                              child: Column(
                                                 crossAxisAlignment:
-                                                    CrossAxisAlignment
-                                                        .start,
+                                                    CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
                                                     song.title,
-                                                    maxLines:
-                                                        1,
+                                                    maxLines: 1,
                                                     overflow:
-                                                        TextOverflow
-                                                            .ellipsis,
-                                                    style:
-                                                        TextStyle(
-                                                      color:
-                                                          primaryText,
-                                                      fontSize:
-                                                          11,
+                                                        TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      color: primaryText,
+                                                      fontSize: 11,
                                                       fontWeight:
-                                                          FontWeight
-                                                              .w700,
+                                                          FontWeight.w700,
                                                     ),
                                                   ),
-                                                  const SizedBox(
-                                                      height:
-                                                          3),
+                                                  const SizedBox(height: 3),
                                                   Text(
                                                     song.artist,
-                                                    maxLines:
-                                                        1,
+                                                    maxLines: 1,
                                                     overflow:
-                                                        TextOverflow
-                                                            .ellipsis,
-                                                    style:
-                                                        TextStyle(
-                                                      color:
-                                                          secondaryText,
-                                                      fontSize:
-                                                          8.5,
+                                                        TextOverflow.ellipsis,
+                                                    style: TextStyle(
+                                                      color: secondaryText,
+                                                      fontSize: 8.5,
                                                     ),
                                                   ),
                                                   if (song
                                                       .album
                                                       .isNotEmpty) ...[
-                                                    const SizedBox(
-                                                        height:
-                                                            2),
+                                                    const SizedBox(height: 2),
                                                     Text(
                                                       song.album,
-                                                      maxLines:
-                                                          1,
+                                                      maxLines: 1,
                                                       overflow:
-                                                          TextOverflow
-                                                              .ellipsis,
-                                                      style:
-                                                          TextStyle(
-                                                        color:
-                                                            secondaryText,
-                                                        fontSize:
-                                                            7.5,
+                                                          TextOverflow.ellipsis,
+                                                      style: TextStyle(
+                                                        color: secondaryText,
+                                                        fontSize: 7.5,
                                                       ),
                                                     ),
                                                   ],
@@ -2676,8 +2411,7 @@ class _HomeScreenState extends State<HomeScreen>
                                               ),
                                             ),
 
-                                            const SizedBox(
-                                                width: 8),
+                                            const SizedBox(width: 8),
 
                                             // PLAY BUTTON REMOVED
                                           ],
@@ -2703,27 +2437,21 @@ class _HomeScreenState extends State<HomeScreen>
   // ALL PLAYLISTS
   // ============================================================
 
-  void _showAllPlaylists(
-    BuildContext context,
-  ) {
-    if (allSongs.isEmpty) return;
+  void _showAllPlaylists(BuildContext context) {
+    if (_homeSongs.isEmpty) return;
 
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-          Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(26),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (sheetContext) {
         final theme = Theme.of(sheetContext);
         final player = PlayerScope.of(context);
 
-        final bool isDark =
-            theme.brightness == Brightness.dark;
+        final bool isDark = theme.brightness == Brightness.dark;
 
         final Color primaryText = isDark
             ? Colors.white
@@ -2735,26 +2463,18 @@ class _HomeScreenState extends State<HomeScreen>
 
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              14,
-              18,
-              20,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: secondaryText
-                          .withValues(alpha: 0.35),
-                      borderRadius:
-                          BorderRadius.circular(10),
+                      color: secondaryText.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
@@ -2766,8 +2486,7 @@ class _HomeScreenState extends State<HomeScreen>
                   style: TextStyle(
                     color: primaryText,
                     fontSize: 20,
-                    fontWeight:
-                        FontWeight.w800,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
 
@@ -2775,10 +2494,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                 Text(
                   'Choose a playlist',
-                  style: TextStyle(
-                    color: secondaryText,
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: secondaryText, fontSize: 10),
                 ),
 
                 const SizedBox(height: 14),
@@ -2786,35 +2502,25 @@ class _HomeScreenState extends State<HomeScreen>
                 Flexible(
                   child: ListView.separated(
                     shrinkWrap: true,
-                    itemCount:
-                        _playlistNames.length,
-                    separatorBuilder:
-                        (context, index) =>
-                            const SizedBox(
-                      height: 7,
-                    ),
-                    itemBuilder:
-                        (context, index) {
-                      final String name =
-                          _playlistNames[index];
+                    itemCount: _playlistNames.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 7),
+                    itemBuilder: (context, index) {
+                      final String name = _playlistNames[index];
 
-                      final List<SongModel>
-                          songs =
-                          _getPlaylistSongs(
+                      final List<SongModel> songs = _getPlaylistSongs(
                         player,
                         name,
                         index,
                       );
 
                       return ListTile(
-                        contentPadding:
-                            const EdgeInsets.symmetric(
+                        contentPadding: const EdgeInsets.symmetric(
                           horizontal: 6,
                           vertical: 2,
                         ),
                         leading: ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(10),
                           child: _songImage(
                             songs.first.imagePath,
                             width: 46,
@@ -2826,45 +2532,33 @@ class _HomeScreenState extends State<HomeScreen>
                           style: TextStyle(
                             color: primaryText,
                             fontSize: 11,
-                            fontWeight:
-                                FontWeight.w700,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         subtitle: Text(
                           '${songs.length} songs',
-                          style: TextStyle(
-                            color: secondaryText,
-                            fontSize: 8,
-                          ),
+                          style: TextStyle(color: secondaryText, fontSize: 8),
                         ),
                         trailing: Icon(
-                          Icons
-                              .chevron_right_rounded,
+                          Icons.chevron_right_rounded,
                           color: secondaryText,
                         ),
                         onTap: () {
-                          Navigator.of(
-                            sheetContext,
-                          ).pop();
+                          Navigator.of(sheetContext).pop();
 
-                          Future.delayed(
-                            const Duration(
-                              milliseconds: 100,
-                            ),
-                            () {
-                              if (!context.mounted) {
-                                return;
-                              }
+                          Future.delayed(const Duration(milliseconds: 100), () {
+                            if (!context.mounted) {
+                              return;
+                            }
 
-                              _showPlaylistSongs(
-                                context,
-                                name,
-                                songs,
-                                player,
-                                index,
-                              );
-                            },
-                          );
+                            _showPlaylistSongs(
+                              context,
+                              name,
+                              songs,
+                              player,
+                              index,
+                            );
+                          });
                         },
                       );
                     },
@@ -2878,27 +2572,87 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
-  List<SongModel> _playlistSongsForIndex(
-    int index,
-  ) {
-    if (allSongs.isEmpty) {
+  List<SongModel> _playlistSongsForIndex(int index) {
+    final List<SongModel> catalogue = _homeSongs;
+
+    if (catalogue.isEmpty) {
       return const <SongModel>[];
     }
 
-    final first =
-        allSongs[index % allSongs.length];
+    final int songCount = catalogue.length < 8 ? catalogue.length : 8;
+    final int start = (index * 5) % catalogue.length;
 
-    final second =
-        allSongs[(index + 1) % allSongs.length];
+    return List<SongModel>.generate(
+      songCount,
+      (songIndex) => catalogue[(start + songIndex) % catalogue.length],
+      growable: false,
+    );
+  }
 
-    final third =
-        allSongs[(index + 2) % allSongs.length];
+  List<SongModel> _songsForMood(String title, String tag, int moodIndex) {
+    final String cleanTag = tag.toLowerCase();
+    final String cleanTitle = title.toLowerCase();
 
-    return [
-      first,
-      second,
-      third,
-    ];
+    bool matchesMood(SongModel song) {
+      final String searchable = <String>[
+        song.title,
+        song.artist,
+        song.album,
+        ...song.tags,
+      ].join(' ').toLowerCase();
+
+      return searchable.contains(cleanTag) || searchable.contains(cleanTitle);
+    }
+
+    final List<SongModel> onlineSongs = _homeSongs
+        .where((song) => song.isNetwork)
+        .toList();
+    final List<SongModel> localSongs = _homeSongs
+        .where((song) => !song.isNetwork)
+        .toList();
+    final List<SongModel> matchedOnline = onlineSongs
+        .where(matchesMood)
+        .toList();
+    final List<SongModel> matchedLocal = localSongs.where(matchesMood).toList();
+
+    final List<SongModel> result = <SongModel>[];
+    final Set<String> existing = <String>{};
+
+    void addUnique(SongModel song) {
+      final String key = '${song.source}:${song.id}';
+      if (existing.add(key)) {
+        result.add(song);
+      }
+    }
+
+    for (final SongModel song in matchedOnline) {
+      if (result.length >= 12) break;
+      addUnique(song);
+    }
+
+    if (onlineSongs.isNotEmpty) {
+      final int start = (moodIndex * 5) % onlineSongs.length;
+
+      for (
+        int offset = 0;
+        offset < onlineSongs.length && result.length < 10;
+        offset++
+      ) {
+        addUnique(onlineSongs[(start + offset) % onlineSongs.length]);
+      }
+    }
+
+    for (final SongModel song in matchedLocal) {
+      if (result.length >= 12) break;
+      addUnique(song);
+    }
+
+    for (final SongModel song in localSongs) {
+      if (result.length >= 10) break;
+      addUnique(song);
+    }
+
+    return result;
   }
 
   // ============================================================
@@ -2914,66 +2668,48 @@ class _HomeScreenState extends State<HomeScreen>
     Color secondaryText,
   ) {
     return SizedBox(
-      height: 103,
+      height: 96,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics:
-            const BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         itemCount: _moods.length,
-        separatorBuilder:
-            (context, index) =>
-                const SizedBox(width: 9),
+        separatorBuilder: (context, index) => const SizedBox(width: 9),
         itemBuilder: (context, index) {
           final mood = _moods[index];
 
-          final moodSongs = allSongs
-              .where(
-                (song) => song.tags.contains(
-                  mood['tag'] as String,
-                ),
-              )
-              .toList();
+          final List<SongModel> moodSongs = _songsForMood(
+            mood['title'] as String,
+            mood['tag'] as String,
+            index,
+          );
 
           return GestureDetector(
             onTap: () {
               if (moodSongs.isEmpty) return;
 
-              _showMoodSongs(
-                context,
-                mood['title'] as String,
-                moodSongs,
-              );
+              _showMoodSongs(context, mood['title'] as String, moodSongs);
             },
             child: Container(
-              width: 100,
+              width: 94,
               decoration: BoxDecoration(
                 color: cardColor,
-                borderRadius:
-                    BorderRadius.circular(18),
-                border: Border.all(
-                  color: borderColor,
-                ),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: borderColor),
               ),
               child: Column(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Container(
-                    width: 43,
-                    height: 43,
+                    width: 39,
+                    height: 39,
                     decoration: BoxDecoration(
-                      color:
-                          (mood['color'] as Color)
-                              .withValues(
-                        alpha: 0.13,
-                      ),
+                      color: (mood['color'] as Color).withValues(alpha: 0.13),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       mood['icon'] as IconData,
-                      color:
-                          mood['color'] as Color,
-                      size: 20,
+                      color: mood['color'] as Color,
+                      size: 18,
                     ),
                   ),
                   const SizedBox(height: 7),
@@ -2982,17 +2718,13 @@ class _HomeScreenState extends State<HomeScreen>
                     style: TextStyle(
                       color: primaryText,
                       fontSize: 10,
-                      fontWeight:
-                          FontWeight.w700,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${moodSongs.length} songs',
-                    style: TextStyle(
-                      color: secondaryText,
-                      fontSize: 7.5,
-                    ),
+                    style: TextStyle(color: secondaryText, fontSize: 7.5),
                   ),
                 ],
               ),
@@ -3014,16 +2746,11 @@ class _HomeScreenState extends State<HomeScreen>
   ) {
     final theme = Theme.of(context);
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color sheetColor = isDark
-        ? const Color(0xFF100D16)
-        : Colors.white;
+    final Color sheetColor = isDark ? const Color(0xFF100D16) : Colors.white;
 
-    final Color primaryText = isDark
-        ? Colors.white
-        : const Color(0xFF17131D);
+    final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
         ? const Color(0xFF81788D)
@@ -3034,33 +2761,23 @@ class _HomeScreenState extends State<HomeScreen>
       backgroundColor: sheetColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(26),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              14,
-              18,
-              18,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 18),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: secondaryText
-                          .withValues(alpha: 0.35),
-                      borderRadius:
-                          BorderRadius.circular(10),
+                      color: secondaryText.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
@@ -3072,8 +2789,7 @@ class _HomeScreenState extends State<HomeScreen>
                   style: TextStyle(
                     color: primaryText,
                     fontSize: 20,
-                    fontWeight:
-                        FontWeight.w800,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
 
@@ -3081,10 +2797,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                 Text(
                   '${songs.length} songs',
-                  style: TextStyle(
-                    color: secondaryText,
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: secondaryText, fontSize: 10),
                 ),
 
                 const SizedBox(height: 14),
@@ -3093,29 +2806,20 @@ class _HomeScreenState extends State<HomeScreen>
                   child: ListView.separated(
                     shrinkWrap: true,
                     itemCount: songs.length,
-                    separatorBuilder:
-                        (context, index) =>
-                            const SizedBox(
-                      height: 7,
-                    ),
-                    itemBuilder:
-                        (context, index) {
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 7),
+                    itemBuilder: (context, index) {
                       final song = songs[index];
 
                       return Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          borderRadius:
-                              BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(15),
                           onTap: () async {
-                            Navigator.of(
-                              sheetContext,
-                            ).pop();
+                            Navigator.of(sheetContext).pop();
 
                             await Future.delayed(
-                              const Duration(
-                                milliseconds: 100,
-                              ),
+                              const Duration(milliseconds: 100),
                             );
 
                             if (!context.mounted) {
@@ -3126,41 +2830,26 @@ class _HomeScreenState extends State<HomeScreen>
                               context,
                               song,
                               openPlayer: true,
+                              playbackSongs: songs,
                             );
                           },
                           child: Container(
-                            padding:
-                                const EdgeInsets.all(8),
-                            decoration:
-                                BoxDecoration(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
                               color: isDark
-                                  ? const Color(
-                                      0xFF17131F,
-                                    )
-                                  : const Color(
-                                      0xFFF7F3FA,
-                                    ),
-                              borderRadius:
-                                  BorderRadius.circular(
-                                15,
-                              ),
+                                  ? const Color(0xFF17131F)
+                                  : const Color(0xFFF7F3FA),
+                              borderRadius: BorderRadius.circular(15),
                               border: Border.all(
                                 color: isDark
-                                    ? const Color(
-                                        0xFF2C2535,
-                                      )
-                                    : const Color(
-                                        0xFFE5DFE9,
-                                      ),
+                                    ? const Color(0xFF2C2535)
+                                    : const Color(0xFFE5DFE9),
                               ),
                             ),
                             child: Row(
                               children: [
                                 ClipRRect(
-                                  borderRadius:
-                                      BorderRadius.circular(
-                                    10,
-                                  ),
+                                  borderRadius: BorderRadius.circular(10),
                                   child: _songImage(
                                     song.imagePath,
                                     width: 50,
@@ -3168,60 +2857,41 @@ class _HomeScreenState extends State<HomeScreen>
                                   ),
                                 ),
 
-                                const SizedBox(
-                                    width: 10),
+                                const SizedBox(width: 10),
 
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
-                                        CrossAxisAlignment
-                                            .start,
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         song.title,
                                         maxLines: 1,
-                                        overflow:
-                                            TextOverflow
-                                                .ellipsis,
-                                        style:
-                                            TextStyle(
-                                          color:
-                                              primaryText,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: primaryText,
                                           fontSize: 11,
-                                          fontWeight:
-                                              FontWeight
-                                                  .w700,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
-                                      const SizedBox(
-                                          height: 3),
+                                      const SizedBox(height: 3),
                                       Text(
                                         song.artist,
                                         maxLines: 1,
-                                        overflow:
-                                            TextOverflow
-                                                .ellipsis,
-                                        style:
-                                            TextStyle(
-                                          color:
-                                              secondaryText,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: secondaryText,
                                           fontSize: 8.5,
                                         ),
                                       ),
-                                      if (song.album
-                                          .isNotEmpty) ...[
-                                        const SizedBox(
-                                            height: 2),
+                                      if (song.album.isNotEmpty) ...[
+                                        const SizedBox(height: 2),
                                         Text(
                                           song.album,
                                           maxLines: 1,
-                                          overflow:
-                                              TextOverflow
-                                                  .ellipsis,
-                                          style:
-                                              TextStyle(
-                                            color:
-                                                secondaryText,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: secondaryText,
                                             fontSize: 7.5,
                                           ),
                                         ),
@@ -3251,17 +2921,12 @@ class _HomeScreenState extends State<HomeScreen>
   // ALL MOODS
   // ============================================================
 
-  void _showAllMoods(
-    BuildContext context,
-  ) {
+  void _showAllMoods(BuildContext context) {
     final theme = Theme.of(context);
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color primaryText = isDark
-        ? Colors.white
-        : const Color(0xFF17131D);
+    final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
         ? const Color(0xFF81788D)
@@ -3269,37 +2934,26 @@ class _HomeScreenState extends State<HomeScreen>
 
     showModalBottomSheet(
       context: context,
-      backgroundColor:
-          theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(26),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(26)),
       ),
       builder: (sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              14,
-              18,
-              20,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 14, 18, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
                     width: 42,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: secondaryText
-                          .withValues(alpha: 0.35),
-                      borderRadius:
-                          BorderRadius.circular(10),
+                      color: secondaryText.withValues(alpha: 0.35),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
                 ),
@@ -3311,8 +2965,7 @@ class _HomeScreenState extends State<HomeScreen>
                   style: TextStyle(
                     color: primaryText,
                     fontSize: 20,
-                    fontWeight:
-                        FontWeight.w800,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
 
@@ -3320,10 +2973,7 @@ class _HomeScreenState extends State<HomeScreen>
 
                 Text(
                   'Choose your listening mood',
-                  style: TextStyle(
-                    color: secondaryText,
-                    fontSize: 10,
-                  ),
+                  style: TextStyle(color: secondaryText, fontSize: 10),
                 ),
 
                 const SizedBox(height: 14),
@@ -3333,73 +2983,48 @@ class _HomeScreenState extends State<HomeScreen>
                     shrinkWrap: true,
                     gridDelegate:
                         const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 9,
-                      crossAxisSpacing: 9,
-                      childAspectRatio: 2.7,
-                    ),
+                          crossAxisCount: 2,
+                          mainAxisSpacing: 9,
+                          crossAxisSpacing: 9,
+                          childAspectRatio: 2.7,
+                        ),
                     itemCount: _moods.length,
-                    itemBuilder:
-                        (context, index) {
-                      final mood =
-                          _moods[index];
+                    itemBuilder: (context, index) {
+                      final mood = _moods[index];
 
-                      final moodSongs =
-                          allSongs
-                              .where(
-                                (song) =>
-                                    song.tags.contains(
-                                  mood['tag']
-                                      as String,
-                                ),
-                              )
-                              .toList();
+                      final List<SongModel> moodSongs = _songsForMood(
+                        mood['title'] as String,
+                        mood['tag'] as String,
+                        index,
+                      );
 
                       return GestureDetector(
                         onTap: () {
-                          Navigator.of(
-                            sheetContext,
-                          ).pop();
+                          Navigator.of(sheetContext).pop();
 
-                          Future.delayed(
-                            const Duration(
-                              milliseconds: 100,
-                            ),
-                            () {
-                              if (!context.mounted) {
-                                return;
-                              }
+                          Future.delayed(const Duration(milliseconds: 100), () {
+                            if (!context.mounted) {
+                              return;
+                            }
 
-                              _showMoodSongs(
-                                context,
-                                mood['title']
-                                    as String,
-                                moodSongs,
-                              );
-                            },
-                          );
+                            _showMoodSongs(
+                              context,
+                              mood['title'] as String,
+                              moodSongs,
+                            );
+                          });
                         },
                         child: Container(
-                          padding:
-                              const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? const Color(
-                                    0xFF17131F,
-                                  )
+                                ? const Color(0xFF17131F)
                                 : Colors.white,
-                            borderRadius:
-                                BorderRadius.circular(
-                              15,
-                            ),
+                            borderRadius: BorderRadius.circular(15),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(
-                                      0xFF2C2535,
-                                    )
-                                  : const Color(
-                                      0xFFE5DFE9,
-                                    ),
+                                  ? const Color(0xFF2C2535)
+                                  : const Color(0xFFE5DFE9),
                             ),
                           ),
                           child: Row(
@@ -3407,62 +3032,39 @@ class _HomeScreenState extends State<HomeScreen>
                               Container(
                                 width: 34,
                                 height: 34,
-                                decoration:
-                                    BoxDecoration(
-                                  color:
-                                      (mood['color']
-                                              as Color)
-                                          .withValues(
+                                decoration: BoxDecoration(
+                                  color: (mood['color'] as Color).withValues(
                                     alpha: 0.13,
                                   ),
-                                  shape:
-                                      BoxShape.circle,
+                                  shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  mood['icon']
-                                      as IconData,
-                                  color:
-                                      mood['color']
-                                          as Color,
+                                  mood['icon'] as IconData,
+                                  color: mood['color'] as Color,
                                   size: 17,
                                 ),
                               ),
-                              const SizedBox(
-                                  width: 8),
+                              const SizedBox(width: 8),
                               Expanded(
                                 child: Column(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment
-                                          .center,
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment
-                                          .start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      mood['title']
-                                          as String,
+                                      mood['title'] as String,
                                       maxLines: 1,
-                                      overflow:
-                                          TextOverflow
-                                              .ellipsis,
-                                      style:
-                                          TextStyle(
-                                        color:
-                                            primaryText,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: primaryText,
                                         fontSize: 10,
-                                        fontWeight:
-                                            FontWeight
-                                                .w700,
+                                        fontWeight: FontWeight.w700,
                                       ),
                                     ),
-                                    const SizedBox(
-                                        height: 2),
+                                    const SizedBox(height: 2),
                                     Text(
                                       '${moodSongs.length} songs',
-                                      style:
-                                          TextStyle(
-                                        color:
-                                            secondaryText,
+                                      style: TextStyle(
+                                        color: secondaryText,
                                         fontSize: 7.5,
                                       ),
                                     ),
@@ -3485,6 +3087,260 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   // ============================================================
+  // FRESH PICKS
+  // ============================================================
+
+  Widget _buildFreshPicks(
+    BuildContext context,
+    PlayerController player,
+    Color primaryText,
+    Color secondaryText,
+  ) {
+    final List<SongModel> source = _fullSongs.isNotEmpty
+        ? _fullSongs
+        : allSongs;
+    final List<SongModel> songs = source.length > 15
+        ? source.take(15).toList()
+        : source;
+
+    return SizedBox(
+      height: 156,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: songs.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final SongModel song = songs[index];
+
+          return _largeSongCard(
+            context,
+            player,
+            song,
+            song.album.isNotEmpty ? song.album : 'Fresh Pick',
+            primaryText,
+            secondaryText,
+          );
+        },
+      ),
+    );
+  }
+
+  // ============================================================
+  // POPULAR ARTISTS
+  // ============================================================
+
+  Widget _buildPopularArtists(
+    BuildContext context,
+    PlayerController player,
+    Color cardColor,
+    Color borderColor,
+    Color primaryText,
+    Color secondaryText,
+  ) {
+    final Map<String, SongModel> artistSongs = <String, SongModel>{};
+
+    for (final SongModel song in _homeSongs) {
+      artistSongs.putIfAbsent(song.artist, () => song);
+    }
+
+    final List<MapEntry<String, SongModel>> artists = artistSongs.entries
+        .toList();
+
+    return SizedBox(
+      height: 132,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: artists.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final MapEntry<String, SongModel> artist = artists[index];
+          final SongModel song = artist.value;
+          final bool current = player.currentSongData.id == song.id;
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => LibraryScreen(
+                    initialTab: 3,
+                    initialArtist: artist.key,
+                    showAllCollections: true,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              width: 104,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: cardColor,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: current ? const Color(0xFF7A45C4) : borderColor,
+                ),
+              ),
+              child: Column(
+                children: [
+                  ClipOval(
+                    child: _songImage(
+                      _artistPhotoFor(artist.key, song.imagePath),
+                      width: 74,
+                      height: 74,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    artist.key,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: primaryText,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Artist',
+                    style: TextStyle(color: secondaryText, fontSize: 8),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  String _artistPhotoFor(String artistName, String fallback) {
+    final String name = artistName.trim().toLowerCase();
+
+    if (name.contains('arijit singh')) {
+      return 'assets/images/artists/arijit_singh.jpg';
+    }
+    if (name.contains('rahat fateh ali khan')) {
+      return 'assets/images/artists/rahat_fateh_ali_khan.jpg';
+    }
+    if (name.contains('mohit chauhan')) {
+      return 'assets/images/artists/mohit_chauhan.jpg';
+    }
+    if (name.contains('atif aslam')) {
+      return 'assets/images/artists/atif_aslam.jpg';
+    }
+    if (name.contains('javed bashir')) {
+      return 'assets/images/artists/javed_bashir.jpg';
+    }
+
+    return fallback;
+  }
+
+  // ============================================================
+  // ALBUMS FOR YOU
+  // ============================================================
+
+  Widget _buildAlbumsForYou(
+    BuildContext context,
+    PlayerController player,
+    Color cardColor,
+    Color selectedCardColor,
+    Color borderColor,
+    Color primaryText,
+    Color secondaryText,
+  ) {
+    final Map<String, SongModel> uniqueAlbums = <String, SongModel>{};
+    for (final SongModel song in _homeSongs) {
+      final String album = song.album.trim();
+      if (album.isNotEmpty) uniqueAlbums.putIfAbsent(album, () => song);
+    }
+    final List<SongModel> songs = uniqueAlbums.values.take(15).toList();
+
+    return SizedBox(
+      height: 160,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        itemCount: songs.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final SongModel song = songs[index];
+          final bool current = player.currentSongData.id == song.id;
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => LibraryScreen(
+                    initialTab: 2,
+                    initialAlbum: song.album,
+                    showAllCollections: true,
+                  ),
+                ),
+              );
+            },
+            child: Container(
+              width: 132,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: current ? selectedCardColor : cardColor,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: current ? const Color(0xFF493064) : borderColor,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: _songImage(
+                          song.imagePath,
+                          width: 116,
+                          height: 98,
+                        ),
+                      ),
+                      Positioned(
+                        right: 6,
+                        bottom: 6,
+                        child: _playCircle(
+                          isPlaying: current && player.isPlaying,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    song.album,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: primaryText,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    song.artist,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: secondaryText, fontSize: 8),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ============================================================
   // RECOMMENDED
   // ============================================================
 
@@ -3498,20 +3354,18 @@ class _HomeScreenState extends State<HomeScreen>
     Color secondaryText,
     Color tertiaryText,
   ) {
-    final songs = allSongs.length > 5
-        ? allSongs.take(5).toList()
-        : allSongs;
+    final List<SongModel> source = _homeSongs;
+    final List<SongModel> songs = source.length > 10
+        ? source.skip(5).take(10).toList()
+        : source;
 
     return SizedBox(
-      height: 88,
+      height: 82,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        physics:
-            const BouncingScrollPhysics(),
+        physics: const BouncingScrollPhysics(),
         itemCount: songs.length,
-        separatorBuilder:
-            (context, index) =>
-                const SizedBox(width: 9),
+        separatorBuilder: (context, index) => const SizedBox(width: 9),
         itemBuilder: (context, index) {
           return _recommendedCompactTile(
             context,
@@ -3540,86 +3394,58 @@ class _HomeScreenState extends State<HomeScreen>
     Color secondaryText,
     Color tertiaryText,
   ) {
-    final bool current =
-        player.currentSongData.id ==
-            song.id;
+    final bool current = player.currentSongData.id == song.id;
 
     return GestureDetector(
       onTap: () {
-        _playSong(
-          context,
-          song,
-          openPlayer: true,
-        );
+        _playSong(context, song, openPlayer: true);
       },
       child: Container(
-        width: 235,
+        width: 224,
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: current
-              ? selectedCardColor
-              : cardColor,
-          borderRadius:
-              BorderRadius.circular(15),
+          color: current ? selectedCardColor : cardColor,
+          borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: current
-                ? const Color(0xFF493064)
-                : borderColor,
+            color: current ? const Color(0xFF493064) : borderColor,
           ),
         ),
         child: Row(
           children: [
             ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(10),
-              child: _songImage(
-                song.imagePath,
-                width: 56,
-                height: 56,
-              ),
+              borderRadius: BorderRadius.circular(10),
+              child: _songImage(song.imagePath, width: 50, height: 50),
             ),
             const SizedBox(width: 9),
             Expanded(
               child: Column(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     song.title,
                     maxLines: 1,
-                    overflow:
-                        TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: primaryText,
                       fontSize: 11,
-                      fontWeight:
-                          FontWeight.w700,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     song.artist,
                     maxLines: 1,
-                    overflow:
-                        TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: secondaryText,
-                      fontSize: 8.5,
-                    ),
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: secondaryText, fontSize: 8.5),
                   ),
                   if (song.album.isNotEmpty) ...[
                     const SizedBox(height: 3),
                     Text(
                       song.album,
                       maxLines: 1,
-                      overflow:
-                          TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: tertiaryText,
-                        fontSize: 7.5,
-                      ),
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: tertiaryText, fontSize: 7.5),
                     ),
                   ],
                 ],
@@ -3631,14 +3457,10 @@ class _HomeScreenState extends State<HomeScreen>
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: current &&
-                        player.isPlaying
+                color: current && player.isPlaying
                     ? const Color(0xFF7A45C4)
                     : const Color(0xFF1B1624),
-                border: Border.all(
-                  color:
-                      const Color(0xFF3B3046),
-                ),
+                border: Border.all(color: const Color(0xFF3B3046)),
               ),
               child: Icon(
                 current && player.isPlaying
@@ -3663,37 +3485,90 @@ class _HomeScreenState extends State<HomeScreen>
     required double width,
     required double height,
   }) {
+    final String cleanPath = path.trim();
+
+    if (cleanPath.isEmpty) {
+      return _imageFallback(width, height);
+    }
+
+    final bool isNetworkImage =
+        cleanPath.startsWith('http://') || cleanPath.startsWith('https://');
+
+    if (isNetworkImage) {
+      final String imageUrl = cleanPath.startsWith('http://')
+          ? cleanPath.replaceFirst('http://', 'https://')
+          : cleanPath;
+
+      return Image.network(
+        imageUrl,
+        width: width,
+        height: height,
+        fit: BoxFit.cover,
+        filterQuality: FilterQuality.medium,
+        gaplessPlayback: true,
+        headers: const <String, String>{
+          'Accept': 'image/*',
+          'User-Agent': 'SONEXA/1.0 (Android; Flutter)',
+        },
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+
+          return Container(
+            width: width,
+            height: height,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF251735), Color(0xFF15101E)],
+              ),
+            ),
+            alignment: Alignment.center,
+            child: const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Color(0xFFB77CFF),
+              ),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          debugPrint('SONEXA artwork error: $imageUrl');
+          debugPrint('SONEXA artwork details: $error');
+          return _imageFallback(width, height);
+        },
+      );
+    }
+
     return Image.asset(
-      path,
+      cleanPath,
       width: width,
       height: height,
       fit: BoxFit.cover,
-      errorBuilder: (
-        context,
-        error,
-        stackTrace,
-      ) {
-        return Container(
-          width: width,
-          height: height,
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFFB77CFF),
-                Color(0xFF7138C8),
-                Color(0xFF241039),
-              ],
-            ),
-          ),
-          child: const Icon(
-            Icons.music_note_rounded,
-            color: Colors.white,
-            size: 30,
-          ),
-        );
+      errorBuilder: (context, error, stackTrace) {
+        return _imageFallback(width, height);
       },
+    );
+  }
+
+  Widget _imageFallback(double width, double height) {
+    return Container(
+      width: width,
+      height: height,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFFB77CFF), Color(0xFF7138C8), Color(0xFF241039)],
+        ),
+      ),
+      child: const Icon(
+        Icons.music_note_rounded,
+        color: Colors.white,
+        size: 30,
+      ),
     );
   }
 
@@ -3701,9 +3576,7 @@ class _HomeScreenState extends State<HomeScreen>
   // PLAY CIRCLE
   // ============================================================
 
-  Widget _playCircle({
-    required bool isPlaying,
-  }) {
+  Widget _playCircle({required bool isPlaying}) {
     return Container(
       width: 33,
       height: 33,
@@ -3712,10 +3585,7 @@ class _HomeScreenState extends State<HomeScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFB77CFF),
-            Color(0xFF7138C8),
-          ],
+          colors: [Color(0xFFB77CFF), Color(0xFF7138C8)],
         ),
         boxShadow: [
           BoxShadow(
@@ -3726,9 +3596,7 @@ class _HomeScreenState extends State<HomeScreen>
         ],
       ),
       child: Icon(
-        isPlaying
-            ? Icons.pause_rounded
-            : Icons.play_arrow_rounded,
+        isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
         color: Colors.white,
         size: 18,
       ),
@@ -3741,12 +3609,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   void _openAllSongs(BuildContext context) {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) =>
-            const LibraryScreen(
-          initialFilter: 2,
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => const LibraryScreen(initialFilter: 2)),
     );
   }
 }
@@ -3758,9 +3621,7 @@ class _HomeScreenState extends State<HomeScreen>
 class _EqualizerBars extends StatelessWidget {
   final Animation<double> animation;
 
-  const _EqualizerBars({
-    required this.animation,
-  });
+  const _EqualizerBars({required this.animation});
 
   @override
   Widget build(BuildContext context) {
@@ -3773,10 +3634,8 @@ class _EqualizerBars extends StatelessWidget {
           width: 21,
           height: 21,
           child: Row(
-            mainAxisAlignment:
-                MainAxisAlignment.spaceEvenly,
-            crossAxisAlignment:
-                CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               _bar(7 + (value * 8)),
               _bar(13 - (value * 7)),
@@ -3794,10 +3653,8 @@ class _EqualizerBars extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: const Color(0xFFB77CFF),
-        borderRadius:
-            BorderRadius.circular(5),
+        borderRadius: BorderRadius.circular(5),
       ),
     );
   }
 }
-

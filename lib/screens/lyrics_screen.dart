@@ -2,9 +2,48 @@ import 'package:flutter/material.dart';
 
 import '../data/lyrics_data.dart';
 import '../player/player_scope.dart';
+import '../services/lyrics_api_service.dart';
 
-class LyricsScreen extends StatelessWidget {
+class LyricsScreen extends StatefulWidget {
   const LyricsScreen({super.key});
+
+  @override
+  State<LyricsScreen> createState() => _LyricsScreenState();
+}
+
+class _LyricsScreenState extends State<LyricsScreen> {
+  final Map<String, Future<LyricsResult>> _requests =
+      <String, Future<LyricsResult>>{};
+
+  Future<LyricsResult> _lyricsRequest({
+    required String title,
+    required String artist,
+    required String album,
+    required int duration,
+  }) {
+    final List<String> localLyrics = getLyricsForSong(title);
+    if (localLyrics.isNotEmpty) {
+      return Future<LyricsResult>.value(
+        LyricsResult(
+          lines: localLyrics,
+          isSynced: false,
+          source: 'SONEXA local catalogue',
+        ),
+      );
+    }
+
+    final String key =
+        '${title.trim().toLowerCase()}|${artist.trim().toLowerCase()}';
+    return _requests.putIfAbsent(
+      key,
+      () => LyricsApiService.instance.fetchLyrics(
+        title: title,
+        artist: artist,
+        album: album,
+        durationSeconds: duration,
+      ),
+    );
+  }
 
   // ============================================================
   // THEME HELPERS
@@ -15,51 +54,35 @@ class LyricsScreen extends StatelessWidget {
   }
 
   static Color _backgroundColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF080812)
-        : const Color(0xFFF7F5FA);
+    return _isDark(context) ? const Color(0xFF080812) : const Color(0xFFF7F5FA);
   }
 
   static Color _cardColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF100D17)
-        : const Color(0xFFFFFFFF);
+    return _isDark(context) ? const Color(0xFF100D17) : const Color(0xFFFFFFFF);
   }
 
   static Color _primaryText(BuildContext context) {
-    return _isDark(context)
-        ? Colors.white
-        : const Color(0xFF18151D);
+    return _isDark(context) ? Colors.white : const Color(0xFF18151D);
   }
 
   static Color _secondaryText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF9D96A8)
-        : const Color(0xFF6F6878);
+    return _isDark(context) ? const Color(0xFF9D96A8) : const Color(0xFF6F6878);
   }
 
   static Color _mutedText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF777080)
-        : const Color(0xFF777080);
+    return _isDark(context) ? const Color(0xFF777080) : const Color(0xFF777080);
   }
 
   static Color _topButtonColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF17131F)
-        : const Color(0xFFFFFFFF);
+    return _isDark(context) ? const Color(0xFF17131F) : const Color(0xFFFFFFFF);
   }
 
   static Color _borderColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF292231)
-        : const Color(0xFFE3DDEB);
+    return _isDark(context) ? const Color(0xFF292231) : const Color(0xFFE3DDEB);
   }
 
   static Color _iconColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFFB9B2C3)
-        : const Color(0xFF625B6B);
+    return _isDark(context) ? const Color(0xFFB9B2C3) : const Color(0xFF625B6B);
   }
 
   // ============================================================
@@ -77,16 +100,21 @@ class LyricsScreen extends StatelessWidget {
         // CURRENT SONG INFORMATION
         // ========================================================
 
-        final String songTitle = player.currentSong;
-        final String songArtist = player.currentArtist;
-        final String songImage = player.currentImage;
+        final currentSong = player.currentSongData;
+        final String songTitle = currentSong.title;
+        final String songArtist = currentSong.artist;
+        final String songImage = currentSong.imagePath;
 
         // ========================================================
         // CURRENT SONG LYRICS
         // ========================================================
 
-        final List<String> lyrics =
-            getLyricsForSong(songTitle);
+        final Future<LyricsResult> lyricsFuture = _lyricsRequest(
+          title: songTitle,
+          artist: songArtist,
+          album: currentSong.album,
+          duration: currentSong.duration,
+        );
 
         return Scaffold(
           backgroundColor: _backgroundColor(context),
@@ -99,12 +127,7 @@ class LyricsScreen extends StatelessWidget {
                 // ==================================================
 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    16,
-                    14,
-                    16,
-                    8,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
                   child: Row(
                     children: [
                       _topButton(
@@ -131,8 +154,20 @@ class LyricsScreen extends StatelessWidget {
 
                       _topButton(
                         context,
-                        icon: Icons.more_vert_rounded,
-                        onTap: () {},
+                        icon: Icons.info_outline_rounded,
+                        onTap: () {
+                          ScaffoldMessenger.of(context)
+                            ..hideCurrentSnackBar()
+                            ..showSnackBar(
+                              SnackBar(
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                                content: Text(
+                                  'Local lyrics pehle check hote hain; baaki tracks ke lyrics online load hote hain.',
+                                ),
+                              ),
+                            );
+                        },
                       ),
                     ],
                   ),
@@ -141,39 +176,20 @@ class LyricsScreen extends StatelessWidget {
                 // ==================================================
                 // SONG HEADER
                 // ==================================================
-
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    22,
-                    14,
-                    22,
-                    0,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(22, 14, 22, 0),
                   child: Row(
                     children: [
                       ClipRRect(
                         borderRadius: BorderRadius.circular(16),
-                        child: Image.asset(
-                          songImage,
-                          width: 58,
-                          height: 58,
-                          fit: BoxFit.cover,
-                          errorBuilder: (
-                            context,
-                            error,
-                            stackTrace,
-                          ) {
-                            return _imageFallback(context);
-                          },
-                        ),
+                        child: _songArtwork(context, songImage),
                       ),
 
                       const SizedBox(width: 13),
 
                       Expanded(
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               songTitle,
@@ -204,9 +220,7 @@ class LyricsScreen extends StatelessWidget {
 
                       AnimatedOpacity(
                         opacity: player.isPlaying ? 1 : 0.35,
-                        duration: const Duration(
-                          milliseconds: 200,
-                        ),
+                        duration: const Duration(milliseconds: 200),
                         child: const Icon(
                           Icons.graphic_eq_rounded,
                           color: Color(0xFFB77CFF),
@@ -222,114 +236,103 @@ class LyricsScreen extends StatelessWidget {
                 // ==================================================
                 // LYRICS CARD
                 // ==================================================
-
                 Expanded(
                   child: Container(
                     width: double.infinity,
-                    margin: const EdgeInsets.fromLTRB(
-                      16,
-                      0,
-                      16,
-                      12,
-                    ),
-                    padding: const EdgeInsets.fromLTRB(
-                      22,
-                      24,
-                      22,
-                      20,
-                    ),
+                    margin: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                    padding: const EdgeInsets.fromLTRB(22, 24, 22, 20),
                     decoration: BoxDecoration(
                       color: _cardColor(context),
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(
-                        color: _borderColor(context),
-                      ),
+                      border: Border.all(color: _borderColor(context)),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(
-                            alpha: _isDark(context)
-                                ? 0.20
-                                : 0.08,
+                            alpha: _isDark(context) ? 0.20 : 0.08,
                           ),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
                       ],
                     ),
-                    child: lyrics.isEmpty
-                        ? _emptyLyrics(context)
-                        : SingleChildScrollView(
-                            physics:
-                                const BouncingScrollPhysics(),
-                            child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.center,
-                              children: [
-                                const SizedBox(height: 12),
+                    child: FutureBuilder<LyricsResult>(
+                      future: lyricsFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState != ConnectionState.done) {
+                          return _loadingLyrics(context);
+                        }
 
-                                for (
-                                  int index = 0;
-                                  index < lyrics.length;
-                                  index++
-                                ) ...[
-                                  _lyricText(
-                                    context,
-                                    lyrics[index],
-                                    isActive: index == 2,
-                                  ),
+                        final LyricsResult result =
+                            snapshot.data ?? const LyricsResult.unavailable();
 
-                                  SizedBox(
-                                    height: index == 2
-                                        ? 28
-                                        : 16,
-                                  ),
-                                ],
+                        if (!result.hasLyrics) {
+                          return _emptyLyrics(
+                            context,
+                            message: result.errorMessage,
+                          );
+                        }
 
-                                const SizedBox(height: 25),
+                        final List<String> lyrics = result.lines;
+                        return SingleChildScrollView(
+                          physics: const BouncingScrollPhysics(),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              const SizedBox(height: 12),
 
-                                Container(
-                                  width: 42,
-                                  height: 42,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: _isDark(context)
-                                        ? const Color(0xFF17131F)
-                                        : const Color(0xFFF2EEF7),
-                                    border: Border.all(
-                                      color:
-                                          _borderColor(context),
-                                    ),
-                                  ),
-                                  child: Icon(
-                                    Icons.music_note_rounded,
-                                    color: _isDark(context)
-                                        ? const Color(0xFF6C6378)
-                                        : const Color(0xFF8A8294),
-                                    size: 20,
-                                  ),
+                              for (
+                                int index = 0;
+                                index < lyrics.length;
+                                index++
+                              ) ...[
+                                _lyricText(
+                                  context,
+                                  lyrics[index],
+                                  isActive: false,
                                 ),
 
-                                const SizedBox(height: 25),
+                                SizedBox(height: 16),
                               ],
-                            ),
+
+                              const SizedBox(height: 25),
+
+                              Container(
+                                width: 42,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: _isDark(context)
+                                      ? const Color(0xFF17131F)
+                                      : const Color(0xFFF2EEF7),
+                                  border: Border.all(
+                                    color: _borderColor(context),
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.music_note_rounded,
+                                  color: _isDark(context)
+                                      ? const Color(0xFF6C6378)
+                                      : const Color(0xFF8A8294),
+                                  size: 20,
+                                ),
+                              ),
+
+                              const SizedBox(height: 25),
+                            ],
                           ),
+                        );
+                      },
+                    ),
                   ),
                 ),
 
                 // ==================================================
                 // PLAYBACK CONTROLS
                 // ==================================================
-
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    28,
-                    0,
-                    28,
-                    10,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(28, 0, 28, 10),
                   child: Row(
-                    mainAxisAlignment:
-                        MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       // PREVIOUS
                       IconButton(
@@ -349,16 +352,12 @@ class LyricsScreen extends StatelessWidget {
                         child: Container(
                           width: 46,
                           height: 46,
-                          decoration:
-                              const BoxDecoration(
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
                             gradient: LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFB77CFF),
-                                Color(0xFF7138C8),
-                              ],
+                              colors: [Color(0xFFB77CFF), Color(0xFF7138C8)],
                             ),
                             boxShadow: [
                               BoxShadow(
@@ -412,11 +411,7 @@ class LyricsScreen extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFB77CFF),
-            Color(0xFF7138C8),
-            Color(0xFF241039),
-          ],
+          colors: [Color(0xFFB77CFF), Color(0xFF7138C8), Color(0xFF241039)],
         ),
       ),
       child: const Icon(
@@ -427,16 +422,70 @@ class LyricsScreen extends StatelessWidget {
     );
   }
 
+  static Widget _songArtwork(BuildContext context, String imagePath) {
+    final String cleanPath = imagePath.trim();
+
+    if (cleanPath.isEmpty) return _imageFallback(context);
+
+    if (cleanPath.startsWith('http://') || cleanPath.startsWith('https://')) {
+      final String safeUrl = cleanPath.startsWith('http://')
+          ? cleanPath.replaceFirst('http://', 'https://')
+          : cleanPath;
+
+      return Image.network(
+        safeUrl,
+        width: 58,
+        height: 58,
+        fit: BoxFit.cover,
+        gaplessPlayback: true,
+        filterQuality: FilterQuality.medium,
+        loadingBuilder: (context, child, progress) {
+          return progress == null ? child : _imageFallback(context);
+        },
+        errorBuilder: (_, _, _) => _imageFallback(context),
+      );
+    }
+
+    return Image.asset(
+      cleanPath,
+      width: 58,
+      height: 58,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => _imageFallback(context),
+    );
+  }
+
   // ============================================================
   // EMPTY LYRICS
   // ============================================================
 
-  static Widget _emptyLyrics(BuildContext context) {
+  static Widget _loadingLyrics(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(
+            color: Color(0xFF9B6BFF),
+            strokeWidth: 2.5,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Finding lyrics…',
+            style: TextStyle(
+              color: _secondaryText(context),
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static Widget _emptyLyrics(BuildContext context, {String? message}) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          vertical: 80,
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 80),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -462,12 +511,9 @@ class LyricsScreen extends StatelessWidget {
             const SizedBox(height: 7),
 
             Text(
-              'Lyrics are not available for this song.',
+              message ?? 'Lyrics are not available for this song.',
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _mutedText(context),
-                fontSize: 12,
-              ),
+              style: TextStyle(color: _mutedText(context), fontSize: 12),
             ),
           ],
         ),
@@ -487,19 +533,12 @@ class LyricsScreen extends StatelessWidget {
     return AnimatedDefaultTextStyle(
       duration: const Duration(milliseconds: 200),
       style: TextStyle(
-        color: isActive
-            ? const Color(0xFFD2B5FF)
-            : _mutedText(context),
+        color: isActive ? const Color(0xFFD2B5FF) : _mutedText(context),
         fontSize: isActive ? 23 : 19,
-        fontWeight: isActive
-            ? FontWeight.w800
-            : FontWeight.w600,
+        fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
         height: 1.55,
       ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-      ),
+      child: Text(text, textAlign: TextAlign.center),
     );
   }
 
@@ -520,15 +559,9 @@ class LyricsScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: _topButtonColor(context),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: _borderColor(context),
-          ),
+          border: Border.all(color: _borderColor(context)),
         ),
-        child: Icon(
-          icon,
-          color: _iconColor(context),
-          size: 20,
-        ),
+        child: Icon(icon, color: _iconColor(context), size: 20),
       ),
     );
   }
