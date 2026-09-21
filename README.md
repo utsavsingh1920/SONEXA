@@ -1,191 +1,119 @@
 <div align="center">
 
-# 🎵 SONEXA
+<img src="assets/images/sonexa_logo.png" width="110" alt="SONEXA logo">
 
-### Your Music. Your Mood.
+# SONEXA
 
-**A modern Flutter music player with a premium dark interface and an intuitive listening experience.**
+### Feel Every Beat
 
-Built with Flutter & Dart 💜
+A modern Flutter music player with online music discovery, persistent collections, lyrics, queue controls, and a polished dark interface.
+
+[![Flutter](https://img.shields.io/badge/Flutter-3.47.1-02569B?logo=flutter)](https://flutter.dev/)
+[![Dart](https://img.shields.io/badge/Dart-3.13.1-0175C2?logo=dart)](https://dart.dev/)
+![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android)
+![Version](https://img.shields.io/badge/Version-1.0.0-9B6BFF)
 
 </div>
 
 ---
 
-## 🎧 About SONEXA
+## About
 
-**SONEXA** is a modern music player application developed using **Flutter and Dart**.
+SONEXA is a portfolio-level Android music player built with Flutter and Dart. It combines local playback with online catalogue discovery through multiple music APIs and provides a complete listening flow across Home, Search, Library, Playback, Queue, Lyrics, and Settings.
 
-The project focuses on delivering a clean and engaging music experience through a premium dark-themed interface, smooth navigation, music playback controls, playlists, favorites, search, queue management, lyrics, equalizer controls, and an organized music library.
+The project demonstrates responsive Flutter UI development, audio playback, REST API integration, persistent local state, reusable widgets, collection-based navigation, and release build preparation.
 
-SONEXA was created as a personal portfolio project to demonstrate Flutter application development, UI/UX design, audio playback integration, state handling, reusable components, and local data persistence.
-
----
-
-## 📱 App Preview
+## App Preview
 
 <p align="center">
-  <img src="screenshots/01_login.png" width="220" alt="SONEXA Login"/>
-  <img src="screenshots/02_home.png" width="220" alt="SONEXA Home"/>
-  <img src="screenshots/03_search.png" width="220" alt="SONEXA Search"/>
+  <img src="screenshots/01-splash.png" width="185" alt="SONEXA Splash">
+  <img src="screenshots/02-login.png" width="185" alt="SONEXA Login">
+  <img src="screenshots/03-home.png" width="185" alt="SONEXA Home">
+  <img src="screenshots/04-search.png" width="185" alt="SONEXA Search">
 </p>
 
 <p align="center">
-  <img src="screenshots/04_now_playing.png" width="220" alt="SONEXA Now Playing"/>
-  <img src="screenshots/05_library.png" width="220" alt="SONEXA Library"/>
-  <img src="screenshots/06_settings.png" width="220" alt="SONEXA Settings"/>
+  <sub>Splash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Login&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Home&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Search</sub>
+</p>
+
+<p align="center">
+  <img src="screenshots/05-library.png" width="185" alt="SONEXA Library">
+  <img src="screenshots/06-playback.png" width="185" alt="SONEXA Playback">
+  <img src="screenshots/07-lyrics.png" width="185" alt="SONEXA Lyrics">
+  <img src="screenshots/08-settings.png" width="185" alt="SONEXA Settings">
+</p>
+
+<p align="center">
+  <sub>Library&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Playback&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Lyrics&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Settings</sub>
 </p>
 
 ---
 
-## ✨ Features
+## Key Features
 
-### 🎵 Music Playback
+### Music discovery
 
-- Play and pause music
-- Previous and next track controls
-- Seek through the currently playing track
-- Playback progress display
-- Shuffle and repeat controls
-- Persistent mini player
-- Full Now Playing experience
+- Dynamic song catalogues from iTunes, Jamendo, and Audius
+- Search by song, artist, album, and category
+- Curated Home sections including Quick Access, Continue Listening, Made For You, and Trending
+- Network artwork loading with graceful fallbacks
+- Preview and full-track source indicators
 
-### ❤️ Personal Music
+### Playback experience
 
-- Liked Songs / Favorites
-- Recently Played
-- Continue Listening
-- Music playlists
-- Albums
-- Artists
-- All Songs
+- Play, pause, next, previous, seek, shuffle, and repeat controls
+- Full Playback screen with artwork and track information
+- Persistent global mini player
+- Collection-aware playback from albums, artists, playlists, and queue
+- Queue management with immediate track switching
+- Equalizer interface with persisted preferences
 
-### 🏠 Music Discovery
+### Personal library
 
-SONEXA's Home experience includes sections such as:
+- Liked Songs and Recently Played
+- User-created playlists with add/remove song controls
+- Saved albums and artists
+- Songs, Albums, Artists, and Playlists filters
+- Album and artist collections with grouped tracks
+- Persistent library data across app restarts
 
-- Quick Access
-- Continue Listening
-- Made For You
-- Trending Now
-- Popular Playlists
-- Mood & Vibes
-- Recommended For You
+### Lyrics and appearance
 
-### 🔍 Search
+- Online lyrics lookup through LRCLIB
+- Local lyrics fallback support
+- Dark, Light, and System theme modes
+- Persistent settings
+- Responsive layouts with fixed navigation and mini-player positioning
 
-- Dedicated music search interface
-- Song discovery
-- Artist discovery
-- Browse music categories
-- Recent search experience
+## APIs and Services
 
-### 🎶 Player Experience
-
-- Modern Now Playing screen
-- Album artwork
-- Music queue
-- Lyrics screen
-- Equalizer controls
-- Favorite / Like controls
-- Shuffle and repeat
-- Seek controls
-
-### 📚 Music Library
-
-Organize and access music through:
-
-- Liked Songs
-- Recently Played
-- Playlists
-- Albums
-- Artists
-- All Songs
-
-### ⚙️ Additional Screens
-
-SONEXA also includes interfaces for:
-
-- Notifications
-- Settings
-- Account Settings
-- Connected Devices
-- Audio Quality
-- Appearance
-- Language
-- Security
-- Help & Support
-- Feedback
-- About SONEXA
-- Logout
-
----
-
-## 🎨 UI / UX
-
-SONEXA uses a consistent modern visual identity across the application.
-
-### Design Highlights
-
-- 🌑 Premium dark interface
-- 💜 Purple accent color system
-- 🎴 Rounded cards and containers
-- 🎵 Music-focused visual hierarchy
-- 📱 Mobile-first responsive layouts
-- 🧭 Consistent bottom navigation
-- 🎧 Persistent mini-player experience
-- ✨ Modern music-player inspired interface
-
----
-
-## 📱 Main Screens
-
-| Screen | Purpose |
+| Service | Purpose |
 |---|---|
-| Login | User entry experience |
-| Home | Music discovery and quick access |
-| Search | Search and browse music |
-| Now Playing | Complete playback controls |
-| Queue | Manage upcoming music |
-| Lyrics | View song lyrics |
-| Equalizer | Audio customization controls |
-| Library | Access personal music collection |
-| Liked Songs | Favorite music collection |
-| Recently Played | Previously played tracks |
-| Playlists | Playlist collection |
-| Albums | Album collection |
-| Artists | Browse music by artist |
-| All Songs | Complete song collection |
-| Notifications | Notification interface |
-| Settings | Application preferences |
-| Account Settings | Account-related options |
-| Connected Devices | Device management interface |
-| Help & Support | Support information |
-| Feedback | Feedback interface |
-| About | SONEXA application information |
+| iTunes Search API | Music discovery, metadata, artwork, and previews |
+| Jamendo API | Full-track catalogue integration |
+| Audius API | Additional online music discovery |
+| LRCLIB | Online lyrics lookup |
+| SharedPreferences | Local persistence for library and settings |
 
----
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Technology | Usage |
 |---|---|
-| Flutter | Cross-platform application development |
-| Dart | Application programming language |
-| just_audio | Audio playback |
-| SharedPreferences | Local preferences and data persistence |
-| Material Design | UI components and application design |
+| Flutter | Android application UI and architecture |
+| Dart | Application logic |
+| just_audio | Local and network audio playback |
+| audio_service | Audio service foundation |
+| http | REST API requests |
+| SharedPreferences | Persistent local state |
+| Material Design | Components, navigation, and theming |
 
----
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```text
 SONEXA/
-│
 ├── android/
 ├── assets/
-├── ios/
+│   └── images/
 ├── lib/
 │   ├── data/
 │   ├── models/
@@ -196,135 +124,76 @@ SONEXA/
 │   ├── theme/
 │   ├── widgets/
 │   └── main.dart
-│
 ├── screenshots/
-│   ├── 01_login.png
-│   ├── 02_home.png
-│   ├── 03_search.png
-│   ├── 04_now_playing.png
-│   ├── 05_library.png
-│   └── 06_settings.png
-│
 ├── pubspec.yaml
 └── README.md
 ```
 
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-Before running SONEXA, make sure you have:
-
-- Flutter SDK
-- Dart SDK
+- Flutter SDK 3.47.1 or compatible
+- Dart SDK 3.13.1 or compatible
 - Android SDK
 - Android Studio or Visual Studio Code
 - Android device or emulator
 
-Check your Flutter installation:
+Verify your environment:
 
 ```bash
 flutter doctor
 ```
 
-### 1. Clone the Repository
+### Installation
 
 ```bash
 git clone https://github.com/utsavsingh1920/SONEXA.git
-```
-
-### 2. Open the Project
-
-```bash
 cd SONEXA
-```
-
-### 3. Install Dependencies
-
-```bash
 flutter pub get
-```
-
-### 4. Run SONEXA
-
-Connect an Android device or start an emulator and run:
-
-```bash
 flutter run
 ```
 
----
+### Local audio setup
 
-## 🎯 Project Goals
+Copyrighted demo audio is intentionally excluded from this public repository. To run the bundled local catalogue, add your own legally licensed audio files under `assets/audio/` and update the paths in `pubspec.yaml` and `lib/data/songs_data.dart`.
 
-SONEXA was developed to practice and demonstrate:
+Online catalogue features require an internet connection. API availability and preview/full-track access depend on the respective providers.
 
-- Flutter mobile application development
-- Dart programming
-- Modern mobile UI/UX design
-- Audio playback integration
-- Application state handling
-- Local data persistence
-- Multi-screen Flutter architecture
-- Reusable widgets and components
-- Navigation between application screens
-- Building a complete portfolio-level mobile application
+## Release Status
 
----
+- Version: **1.0.0**
+- Android ARM64 release build tested on a physical device
+- Flutter analysis completed without issues
+- Core navigation, playback, APIs, persistence, queue, and lyrics verified
+- Public APK distribution is withheld because demonstration media is not included in the repository
 
-## 🔮 Future Improvements
+## Roadmap
 
-SONEXA is an evolving project. Possible future improvements include:
+- Replace local demonstration tracks with royalty-free audio
+- Improve background and lock-screen playback
+- Add headset and Bluetooth media controls
+- Introduce automated widget and integration tests
+- Improve caching and offline catalogue support
 
-- Dynamic local-device music library
-- Improved background audio playback
-- Media notification controls
-- Lock-screen playback controls
-- Bluetooth/headset media controls
-- Enhanced album artwork support
-- Improved music discovery
-- Additional playback customization
-- Further performance and architecture improvements
+## Developer
 
----
-
-## ⚠️ Project Status
-
-SONEXA is currently a **personal educational and portfolio project**.
-
-The current version demonstrates the application's music-player experience and core UI/functionality. Some advanced integrations shown in the interface may be expanded in future versions.
-
----
-
-## 👨‍💻 Developer
-
-**Utsav Singh**
-
+**Utsav Singh**  
 B.Sc. Information Technology Graduate  
-Flutter & Full-Stack Development Enthusiast
+Flutter and Full-Stack Development Enthusiast
 
----
+- GitHub: [@utsavsingh1920](https://github.com/utsavsingh1920)
 
-## 📄 Disclaimer
+## Disclaimer
 
-SONEXA is an educational and portfolio project.
-
-Any music, artist names, album artwork, trademarks, or other third-party media used for demonstration purposes remain the property of their respective owners.
-
-SONEXA is not affiliated with or endorsed by any music streaming platform or record label.
+SONEXA is an educational and portfolio project. Music, artist names, album artwork, trademarks, and other third-party media remain the property of their respective owners. SONEXA is not affiliated with or endorsed by any music streaming service, record label, or API provider.
 
 ---
 
 <div align="center">
 
-### 🎵 SONEXA
+**Made with Flutter and 💜 by Utsav Singh**
 
-**Your Music. Your Mood.**
-
-Made with 💜 using Flutter
-
-© 2026 Utsav Singh. All Rights Reserved.
+© 2026 Utsav Singh
 
 </div>
