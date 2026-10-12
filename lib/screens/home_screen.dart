@@ -26,6 +26,8 @@ class _HomeScreenState extends State<HomeScreen>
   late final AnimationController _equalizerController;
 
   Timer? _heroTimer;
+  Timer? _greetingTimer;
+  int _lastGreetingHour = DateTime.now().hour;
 
   List<SongModel> _indianSongs = const <SongModel>[];
   List<SongModel> _fullSongs = const <SongModel>[];
@@ -66,7 +68,7 @@ class _HomeScreenState extends State<HomeScreen>
     {
       'title': 'Chill',
       'icon': Icons.nightlight_round,
-      'color': const Color(0xFF7D65FF),
+      'color': const Color(0xFF9763EF),
       'tag': 'Chill',
     },
     {
@@ -114,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen>
     {
       'title': 'Vibes',
       'icon': Icons.waves_rounded,
-      'color': const Color(0xFFB77CFF),
+      'color': const Color(0xFFC575FF),
       'tag': 'Chill',
     },
     {
@@ -128,6 +130,16 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+
+    // Keep the greeting up to date if the app remains open across dayparts.
+    _greetingTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      if (!mounted) return;
+      final hour = DateTime.now().hour;
+      if (hour != _lastGreetingHour) {
+        _lastGreetingHour = hour;
+        setState(() {});
+      }
+    });
 
     _heroController = PageController(initialPage: _heroInitialPage);
 
@@ -217,6 +229,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void dispose() {
     _heroTimer?.cancel();
+    _greetingTimer?.cancel();
     _heroController.dispose();
     _equalizerController.dispose();
     super.dispose();
@@ -326,12 +339,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color sheetColor = isDark ? const Color(0xFF100D16) : Colors.white;
+    final Color sheetColor = isDark ? const Color(0xFF100B1A) : Colors.white;
 
     final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
-        ? const Color(0xFF81788D)
+        ? const Color(0xFFA9A1B8)
         : const Color(0xFF756D7D);
 
     final Set<String> selectedIds = currentSongs.map((song) => song.id).toSet();
@@ -409,7 +422,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 vertical: 9,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF7A45C4),
+                                color: const Color(0xFF913CFF),
                                 borderRadius: BorderRadius.circular(14),
                               ),
                               child: const Text(
@@ -455,16 +468,16 @@ class _HomeScreenState extends State<HomeScreen>
                                   padding: const EdgeInsets.all(8),
                                   decoration: BoxDecoration(
                                     color: selected
-                                        ? const Color(0xFF241735)
+                                        ? const Color(0xFF2B1746)
                                         : isDark
-                                        ? const Color(0xFF17131F)
+                                        ? const Color(0xFF191223)
                                         : const Color(0xFFF7F3FA),
                                     borderRadius: BorderRadius.circular(15),
                                     border: Border.all(
                                       color: selected
-                                          ? const Color(0xFF7A45C4)
+                                          ? const Color(0xFF913CFF)
                                           : isDark
-                                          ? const Color(0xFF2C2535)
+                                          ? const Color(0xFF30243F)
                                           : const Color(0xFFE5DFE9),
                                     ),
                                   ),
@@ -518,7 +531,7 @@ class _HomeScreenState extends State<HomeScreen>
                                             : Icons
                                                   .radio_button_unchecked_rounded,
                                         color: selected
-                                            ? const Color(0xFFB77CFF)
+                                            ? const Color(0xFFC575FF)
                                             : secondaryText,
                                         size: 23,
                                       ),
@@ -555,25 +568,25 @@ class _HomeScreenState extends State<HomeScreen>
     final Color backgroundColor = theme.scaffoldBackgroundColor;
 
     final Color cardColor = isDark
-        ? const Color(0xFF12101A)
+        ? const Color(0xFF151020)
         : const Color(0xFFFFFFFF);
 
     final Color selectedCardColor = isDark
-        ? const Color(0xFF191322)
+        ? const Color(0xFF21152F)
         : const Color(0xFFF2EAF9);
 
     final Color borderColor = isDark
-        ? const Color(0xFF292231)
+        ? const Color(0xFF30243F)
         : const Color(0xFFE3DDE9);
 
     final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
-        ? const Color(0xFF797283)
+        ? const Color(0xFFA9A1B8)
         : const Color(0xFF756D7D);
 
     final Color tertiaryText = isDark
-        ? const Color(0xFF5F5868)
+        ? const Color(0xFF847A94)
         : const Color(0xFF928A99);
 
     return AnimatedBuilder(
@@ -594,7 +607,7 @@ class _HomeScreenState extends State<HomeScreen>
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
+                  padding: const EdgeInsets.fromLTRB(8, 14, 8, 0),
                   child: _buildHeader(
                     context,
                     isDark,
@@ -609,7 +622,7 @@ class _HomeScreenState extends State<HomeScreen>
                     physics: const BouncingScrollPhysics(),
                     slivers: [
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(10, 0, 10, 140),
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 156),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate([
                             _buildHero(context),
@@ -907,7 +920,7 @@ class _HomeScreenState extends State<HomeScreen>
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFB77CFF),
+                color: Color(0xFFC575FF),
               ),
             ),
             const SizedBox(width: 11),
@@ -935,7 +948,7 @@ class _HomeScreenState extends State<HomeScreen>
         children: [
           const Icon(
             Icons.cloud_off_rounded,
-            color: Color(0xFFB77CFF),
+            color: Color(0xFFC575FF),
             size: 19,
           ),
           const SizedBox(width: 10),
@@ -982,23 +995,33 @@ class _HomeScreenState extends State<HomeScreen>
     final hour = DateTime.now().hour;
 
     String greeting;
+    IconData greetingIcon;
+    Color greetingIconColor;
 
     if (hour >= 5 && hour < 12) {
       greeting = 'Good Morning';
+      greetingIcon = Icons.wb_twilight_rounded;
+      greetingIconColor = const Color(0xFFFFCA69);
     } else if (hour >= 12 && hour < 17) {
       greeting = 'Good Afternoon';
+      greetingIcon = Icons.wb_sunny_rounded;
+      greetingIconColor = const Color(0xFFFFB84D);
     } else if (hour >= 17 && hour < 21) {
       greeting = 'Good Evening';
+      greetingIcon = Icons.wb_twilight_rounded;
+      greetingIconColor = const Color(0xFFF7A2A9);
     } else {
       greeting = 'Good Night';
+      greetingIcon = Icons.nightlight_round;
+      greetingIconColor = const Color(0xFFA59CFF);
     }
 
     final Color notificationBackground = isDark
-        ? const Color(0xFF14111C)
+        ? const Color(0xFF191223)
         : Colors.white;
 
     final Color notificationIcon = isDark
-        ? const Color(0xFFC5BECF)
+        ? const Color(0xFFD4C9E5)
         : const Color(0xFF4F4858);
 
     return SizedBox(
@@ -1033,7 +1056,7 @@ class _HomeScreenState extends State<HomeScreen>
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFFB77CFF), Color(0xFF7138C8)],
+                      colors: [Color(0xFFC575FF), Color(0xFF7138C8)],
                     ),
                   ),
                   child: const Icon(
@@ -1066,16 +1089,25 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 3),
-                Text(
-                  greeting,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: secondaryText,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    height: 1.0,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        greeting,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: secondaryText,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    Icon(greetingIcon, size: 16, color: greetingIconColor),
+                  ],
                 ),
               ],
             ),
@@ -1115,7 +1147,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Widget _buildHero(BuildContext context) {
     return SizedBox(
-      height: 172,
+      height: 184,
       child: PageView.builder(
         controller: _heroController,
         itemBuilder: (context, index) {
@@ -1140,15 +1172,15 @@ class _HomeScreenState extends State<HomeScreen>
         : const Color(0xFF21152D);
 
     final Color heroSubtitleColor = isDark
-        ? const Color(0xFFAAA1B8)
+        ? const Color(0xFFCEC0DA)
         : const Color(0xFF675A70);
 
     final Color heroLabelColor = isDark
-        ? const Color(0xFFB77CFF)
-        : const Color(0xFF7740B5);
+        ? const Color(0xFFC575FF)
+        : const Color(0xFF8145D2);
 
     final Color heroBorderColor = isDark
-        ? const Color(0xFF3A2850)
+        ? const Color(0xFF5A327E)
         : const Color(0xFFD8C5E9);
 
     final List<Map<String, dynamic>> data = [
@@ -1187,12 +1219,12 @@ class _HomeScreenState extends State<HomeScreen>
       },
       child: Container(
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: isDark
-                ? const [Color(0xFF28154A), Color(0xFF120D1D)]
+                ? const [Color(0xFF311852), Color(0xFF151020)]
                 : const [Color(0xFFEDE1FA), Color(0xFFF9F6FC)],
           ),
           border: Border.all(color: heroBorderColor),
@@ -1205,7 +1237,7 @@ class _HomeScreenState extends State<HomeScreen>
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           child: Stack(
             children: [
               Positioned(
@@ -1234,7 +1266,7 @@ class _HomeScreenState extends State<HomeScreen>
                   height: 170,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: const Color(0xFF9B6BFF)
+                    color: const Color(0xFF913CFF)
                         .withValues(alpha: isDark ? 0.10 : 0.08),
                   ),
                 ),
@@ -1252,9 +1284,9 @@ class _HomeScreenState extends State<HomeScreen>
                       end: Alignment.centerRight,
                       colors: isDark
                           ? const [
-                              Color(0xFF171020),
-                              Color(0xE6171020),
-                              Color(0x00171020),
+                              Color(0xFF1B102C),
+                              Color(0xE61B102C),
+                              Color(0x001B102C),
                             ]
                           : const [
                               Color(0xFFF2E9F9),
@@ -1321,11 +1353,11 @@ class _HomeScreenState extends State<HomeScreen>
                         gradient: const LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [Color(0xFF7040A8), Color(0xFF45226F)],
+                          colors: [Color(0xFF913CFF), Color(0xFF6B22CD)],
                         ),
                         borderRadius: BorderRadius.circular(18),
                         border: Border.all(
-                          color: const Color(0xFF8052B8),
+                          color: const Color(0xFFB770FF),
                           width: 0.6,
                         ),
                         boxShadow: [
@@ -1386,9 +1418,9 @@ class _HomeScreenState extends State<HomeScreen>
             title,
             style: TextStyle(
               color: primaryText,
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.3,
+              letterSpacing: -0.35,
             ),
           ),
         ),
@@ -1446,7 +1478,7 @@ class _HomeScreenState extends State<HomeScreen>
             icon: Icons.history_rounded,
             title: 'Recently Played',
             subtitle: 'Listen again',
-            iconColor: const Color(0xFFB77CFF),
+            iconColor: const Color(0xFFC575FF),
             cardColor: cardColor,
             borderColor: borderColor,
             primaryText: primaryText,
@@ -1481,8 +1513,8 @@ class _HomeScreenState extends State<HomeScreen>
         borderRadius: BorderRadius.circular(17),
         onTap: onTap,
         child: Container(
-          height: 62,
-          padding: const EdgeInsets.all(8),
+          height: 70,
+          padding: const EdgeInsets.all(10),
           decoration: BoxDecoration(
             color: cardColor,
             borderRadius: BorderRadius.circular(17),
@@ -1491,8 +1523,8 @@ class _HomeScreenState extends State<HomeScreen>
           child: Row(
             children: [
               Container(
-                width: 36,
-                height: 36,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
                   color: iconColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
@@ -1511,7 +1543,7 @@ class _HomeScreenState extends State<HomeScreen>
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: primaryText,
-                        fontSize: 10.5,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1617,7 +1649,7 @@ class _HomeScreenState extends State<HomeScreen>
             color: isCurrent ? selectedCardColor : cardColor,
             borderRadius: BorderRadius.circular(17),
             border: Border.all(
-              color: isCurrent ? const Color(0xFF493064) : borderColor,
+              color: isCurrent ? const Color(0xFF624180) : borderColor,
             ),
           ),
           child: Column(
@@ -1662,8 +1694,8 @@ class _HomeScreenState extends State<HomeScreen>
                 child: LinearProgressIndicator(
                   value: progress,
                   minHeight: 3,
-                  backgroundColor: const Color(0xFF30293A),
-                  valueColor: const AlwaysStoppedAnimation(Color(0xFFB77CFF)),
+                  backgroundColor: const Color(0xFF332541),
+                  valueColor: const AlwaysStoppedAnimation(Color(0xFFC575FF)),
                 ),
               ),
             ],
@@ -1833,7 +1865,7 @@ class _HomeScreenState extends State<HomeScreen>
           color: current ? selectedCardColor : cardColor,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: current ? const Color(0xFF493064) : borderColor,
+            color: current ? const Color(0xFF624180) : borderColor,
           ),
         ),
         child: Row(
@@ -1844,7 +1876,7 @@ class _HomeScreenState extends State<HomeScreen>
                 number.toString().padLeft(2, '0'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: current ? const Color(0xFFB77CFF) : tertiaryText,
+                  color: current ? const Color(0xFFC575FF) : tertiaryText,
                   fontSize: 9,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1969,21 +2001,21 @@ class _HomeScreenState extends State<HomeScreen>
     int playlistIndex,
   ) {
     final Color playlistStart = isDark
-        ? const Color(0xFF24143A)
+        ? const Color(0xFF28173D)
         : const Color(0xFFF3EAF9);
 
     final Color playlistEnd = isDark
-        ? const Color(0xFF120E18)
+        ? const Color(0xFF151020)
         : const Color(0xFFFFFFFF);
 
     final Color playlistBorder = isDark
-        ? const Color(0xFF352443)
+        ? const Color(0xFF3A2A53)
         : const Color(0xFFE3DDE9);
 
     final Color titleColor = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color subtitleColor = isDark
-        ? const Color(0xFF7B7385)
+        ? const Color(0xFFA9A1B8)
         : const Color(0xFF817989);
 
     return GestureDetector(
@@ -2104,12 +2136,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color sheetColor = isDark ? const Color(0xFF100D16) : Colors.white;
+    final Color sheetColor = isDark ? const Color(0xFF100B1A) : Colors.white;
 
     final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
-        ? const Color(0xFF81788D)
+        ? const Color(0xFFA9A1B8)
         : const Color(0xFF756D7D);
 
     List<SongModel> currentSongs = List<SongModel>.from(initialSongs);
@@ -2210,12 +2242,12 @@ class _HomeScreenState extends State<HomeScreen>
                               ),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? const Color(0xFF241A30)
+                                    ? const Color(0xFF21152F)
                                     : const Color(0xFFF1E9F8),
                                 borderRadius: BorderRadius.circular(13),
                                 border: Border.all(
                                   color: isDark
-                                      ? const Color(0xFF3B2B4B)
+                                      ? const Color(0xFF493264)
                                       : const Color(0xFFE0D2EA),
                                 ),
                               ),
@@ -2224,7 +2256,7 @@ class _HomeScreenState extends State<HomeScreen>
                                 children: [
                                   Icon(
                                     Icons.add_rounded,
-                                    color: const Color(0xFFB77CFF),
+                                    color: const Color(0xFFC575FF),
                                     size: 17,
                                   ),
                                   const SizedBox(width: 4),
@@ -2263,7 +2295,7 @@ class _HomeScreenState extends State<HomeScreen>
                               decoration: BoxDecoration(
                                 color: isSaved
                                     ? const Color(0xFF2A2035)
-                                    : const Color(0xFF7A45C4),
+                                    : const Color(0xFF913CFF),
                                 borderRadius: BorderRadius.circular(13),
                               ),
                               child: Row(
@@ -2339,14 +2371,14 @@ class _HomeScreenState extends State<HomeScreen>
                                         padding: const EdgeInsets.all(8),
                                         decoration: BoxDecoration(
                                           color: isDark
-                                              ? const Color(0xFF17131F)
+                                              ? const Color(0xFF191223)
                                               : const Color(0xFFF7F3FA),
                                           borderRadius: BorderRadius.circular(
                                             15,
                                           ),
                                           border: Border.all(
                                             color: isDark
-                                                ? const Color(0xFF2C2535)
+                                                ? const Color(0xFF30243F)
                                                 : const Color(0xFFE5DFE9),
                                           ),
                                         ),
@@ -2458,7 +2490,7 @@ class _HomeScreenState extends State<HomeScreen>
             : const Color(0xFF17131D);
 
         final Color secondaryText = isDark
-            ? const Color(0xFF81788D)
+            ? const Color(0xFFA9A1B8)
             : const Color(0xFF756D7D);
 
         return SafeArea(
@@ -2748,12 +2780,12 @@ class _HomeScreenState extends State<HomeScreen>
 
     final bool isDark = theme.brightness == Brightness.dark;
 
-    final Color sheetColor = isDark ? const Color(0xFF100D16) : Colors.white;
+    final Color sheetColor = isDark ? const Color(0xFF100B1A) : Colors.white;
 
     final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
-        ? const Color(0xFF81788D)
+        ? const Color(0xFFA9A1B8)
         : const Color(0xFF756D7D);
 
     showModalBottomSheet(
@@ -2837,12 +2869,12 @@ class _HomeScreenState extends State<HomeScreen>
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? const Color(0xFF17131F)
+                                  ? const Color(0xFF191223)
                                   : const Color(0xFFF7F3FA),
                               borderRadius: BorderRadius.circular(15),
                               border: Border.all(
                                 color: isDark
-                                    ? const Color(0xFF2C2535)
+                                    ? const Color(0xFF30243F)
                                     : const Color(0xFFE5DFE9),
                               ),
                             ),
@@ -2929,7 +2961,7 @@ class _HomeScreenState extends State<HomeScreen>
     final Color primaryText = isDark ? Colors.white : const Color(0xFF17131D);
 
     final Color secondaryText = isDark
-        ? const Color(0xFF81788D)
+        ? const Color(0xFFA9A1B8)
         : const Color(0xFF756D7D);
 
     showModalBottomSheet(
@@ -3018,12 +3050,12 @@ class _HomeScreenState extends State<HomeScreen>
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
                             color: isDark
-                                ? const Color(0xFF17131F)
+                                ? const Color(0xFF191223)
                                 : Colors.white,
                             borderRadius: BorderRadius.circular(15),
                             border: Border.all(
                               color: isDark
-                                  ? const Color(0xFF2C2535)
+                                  ? const Color(0xFF30243F)
                                   : const Color(0xFFE5DFE9),
                             ),
                           ),
@@ -3178,7 +3210,7 @@ class _HomeScreenState extends State<HomeScreen>
                 color: cardColor,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: current ? const Color(0xFF7A45C4) : borderColor,
+                  color: current ? const Color(0xFF913CFF) : borderColor,
                 ),
               ),
               child: Column(
@@ -3288,7 +3320,7 @@ class _HomeScreenState extends State<HomeScreen>
                 color: current ? selectedCardColor : cardColor,
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: current ? const Color(0xFF493064) : borderColor,
+                  color: current ? const Color(0xFF624180) : borderColor,
                 ),
               ),
               child: Column(
@@ -3407,7 +3439,7 @@ class _HomeScreenState extends State<HomeScreen>
           color: current ? selectedCardColor : cardColor,
           borderRadius: BorderRadius.circular(15),
           border: Border.all(
-            color: current ? const Color(0xFF493064) : borderColor,
+            color: current ? const Color(0xFF624180) : borderColor,
           ),
         ),
         child: Row(
@@ -3458,7 +3490,7 @@ class _HomeScreenState extends State<HomeScreen>
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: current && player.isPlaying
-                    ? const Color(0xFF7A45C4)
+                    ? const Color(0xFF913CFF)
                     : const Color(0xFF1B1624),
                 border: Border.all(color: const Color(0xFF3B3046)),
               ),
@@ -3529,7 +3561,7 @@ class _HomeScreenState extends State<HomeScreen>
               height: 20,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                color: Color(0xFFB77CFF),
+                color: Color(0xFFC575FF),
               ),
             ),
           );
@@ -3561,7 +3593,7 @@ class _HomeScreenState extends State<HomeScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFB77CFF), Color(0xFF7138C8), Color(0xFF241039)],
+          colors: [Color(0xFFC575FF), Color(0xFF7138C8), Color(0xFF241039)],
         ),
       ),
       child: const Icon(
@@ -3585,7 +3617,7 @@ class _HomeScreenState extends State<HomeScreen>
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFB77CFF), Color(0xFF7138C8)],
+          colors: [Color(0xFFC575FF), Color(0xFF7138C8)],
         ),
         boxShadow: [
           BoxShadow(
@@ -3652,7 +3684,7 @@ class _EqualizerBars extends StatelessWidget {
       width: 3,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFFB77CFF),
+        color: const Color(0xFFC575FF),
         borderRadius: BorderRadius.circular(5),
       ),
     );

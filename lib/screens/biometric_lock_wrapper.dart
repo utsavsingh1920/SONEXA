@@ -98,10 +98,10 @@ class _BiometricLockWrapperState
   Widget build(BuildContext context) {
     if (_loading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF080812),
+        backgroundColor: Color(0xFF080710),
         body: Center(
           child: CircularProgressIndicator(
-            color: Color(0xFF9B6BFF),
+            color: Color(0xFF913CFF),
           ),
         ),
       );
@@ -115,7 +115,7 @@ class _BiometricLockWrapperState
         if (_locked)
           Positioned.fill(
             child: Material(
-              color: const Color(0xFF080812),
+              color: const Color(0xFF080710),
               child: BiometricLockScreen(
                 onUnlocked: _unlockApp,
               ),

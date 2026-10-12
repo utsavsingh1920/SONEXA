@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../data/songs_data.dart';
+import '../theme/app_theme.dart';
 import '../models/song_model.dart';
 import '../player/player_controller.dart';
 import '../player/player_scope.dart';
@@ -240,7 +241,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _CategoryData(
       title: 'Devotional',
       icon: Icons.celebration_rounded,
-      colors: [Color(0xFFA855F7), Color(0xFF6D28D9)],
+      colors: [Color(0xFFC575FF), Color(0xFF6D28D9)],
       searchValue: 'Indian Devotional',
     ),
     _CategoryData(
@@ -1070,7 +1071,10 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final Color textColor = theme.colorScheme.onSurface;
 
-    final Color secondaryText = textColor.withValues(alpha: 0.62);
+    final bool isDark = theme.brightness == Brightness.dark;
+    final Color secondaryText = isDark
+        ? const Color(0xFFA9A1B8)
+        : textColor.withValues(alpha: 0.62);
 
     final bool showRecent =
         _isFocused && !_hasQuery && _recentSearches.isNotEmpty;
@@ -1117,13 +1121,13 @@ class _SearchScreenState extends State<SearchScreen> {
               Container(
                 width: double.infinity,
                 color: theme.scaffoldBackgroundColor,
-                padding: const EdgeInsets.fromLTRB(10, 18, 10, 10),
+                padding: const EdgeInsets.fromLTRB(8, 16, 8, 9),
                 child: Text(
                   'Search',
                   textAlign: TextAlign.left,
                   style: TextStyle(
                     color: textColor,
-                    fontSize: 27,
+                    fontSize: 28,
                     fontWeight: FontWeight.w800,
                     letterSpacing: -0.7,
                   ),
@@ -1138,7 +1142,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   physics: const BouncingScrollPhysics(),
-                  padding: EdgeInsets.fromLTRB(10, 10, 10, bottomPadding),
+                  padding: EdgeInsets.fromLTRB(8, 10, 8, bottomPadding),
                   children: [
                     // ==================================================
                     // SEARCH BOX
@@ -1171,59 +1175,49 @@ class _SearchScreenState extends State<SearchScreen> {
                       // ==================================================
                       SizedBox(
                         height: 36,
-
                         child: ListView.separated(
                           scrollDirection: Axis.horizontal,
-
                           physics: const BouncingScrollPhysics(),
-
                           padding: const EdgeInsets.only(right: 4),
-
                           itemCount: _trendingSearches.length,
-
-                          separatorBuilder: (context, index) {
-                            return const SizedBox(width: 7);
-                          },
-
+                          separatorBuilder: (_, _) => const SizedBox(width: 7),
                           itemBuilder: (context, index) {
-                            final String item = _trendingSearches[index];
-
-                            return GestureDetector(
-                              onTap: () {
-                                _setSearch(item);
-                              },
-
+                            final item = _trendingSearches[index];
+                            return InkWell(
+                              onTap: () => _setSearch(item),
+                              borderRadius: BorderRadius.circular(20),
                               child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                ),
-
+                                alignment: Alignment.center,
+                                padding: const EdgeInsets.symmetric(horizontal: 11),
                                 decoration: BoxDecoration(
-                                  color:
-                                      theme.colorScheme.surfaceContainerHighest,
-
-                                  borderRadius: BorderRadius.circular(19),
-
-                                  border: Border.all(color: theme.dividerColor),
+                                  color: isDark
+                                      ? const Color(0xFF151020)
+                                      : theme.colorScheme.surface,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? const Color(0xFF4A365D)
+                                        : theme.dividerColor,
+                                  ),
                                 ),
-
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
-
                                   children: [
                                     const Icon(
                                       Icons.trending_up_rounded,
-                                      color: Color(0xFFA855F7),
+                                      color: Color(0xFFC575FF),
                                       size: 15,
                                     ),
-
-                                    const SizedBox(width: 5),
-
+                                    const SizedBox(width: 6),
                                     Text(
                                       item,
+                                      maxLines: 1,
+                                      softWrap: false,
                                       style: TextStyle(
-                                        color: secondaryText,
-                                        fontSize: 12,
+                                        color: isDark
+                                            ? const Color(0xFFF7F4FC)
+                                            : secondaryText,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -1235,7 +1229,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 17),
+                      const SizedBox(height: 20),
 
                       // ==================================================
                       // POPULAR ARTISTS
@@ -1254,7 +1248,7 @@ class _SearchScreenState extends State<SearchScreen> {
                             child: const Text(
                               'See all',
                               style: TextStyle(
-                                color: Color(0xFFB77CFF),
+                                color: Color(0xFFC575FF),
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -1377,7 +1371,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         ),
                       ),
 
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 18),
 
                       // ==================================================
                       // CATEGORIES
@@ -1396,9 +1390,9 @@ class _SearchScreenState extends State<SearchScreen> {
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                               crossAxisCount: 2,
-                              crossAxisSpacing: 9,
-                              mainAxisSpacing: 9,
-                              mainAxisExtent: 84,
+                              crossAxisSpacing: 10,
+                              mainAxisSpacing: 10,
+                              mainAxisExtent: 86,
                             ),
 
                         itemBuilder: (context, index) {
@@ -1489,11 +1483,15 @@ class _SearchBox extends StatelessWidget {
 
     final Color secondaryText = textColor.withValues(alpha: 0.62);
 
-    final Color searchSurface = theme.colorScheme.surface;
+    final Color searchSurface = theme.brightness == Brightness.dark
+        ? AppTheme.surface
+        : theme.colorScheme.surface;
 
     final Color outlineColor = isFocused
-        ? const Color(0xFFA855F7)
-        : theme.colorScheme.onSurface.withValues(alpha: 0.34);
+        ? const Color(0xFFC575FF)
+        : theme.brightness == Brightness.dark
+            ? const Color(0xFF5A426F)
+            : theme.colorScheme.onSurface.withValues(alpha: 0.34);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -1505,7 +1503,7 @@ class _SearchBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: searchSurface,
 
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(19),
 
         border: Border.all(color: outlineColor, width: isFocused ? 1.4 : 1),
 
@@ -1541,7 +1539,7 @@ class _SearchBox extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
 
-              cursorColor: const Color(0xFFA855F7),
+              cursorColor: const Color(0xFFC575FF),
 
               onSubmitted: (_) {
                 _hideKeyboardFromField(focusNode);
@@ -1566,7 +1564,7 @@ class _SearchBox extends StatelessWidget {
 
                 prefixIcon: const Icon(
                   Icons.search_rounded,
-                  color: Color(0xFFA855F7),
+                  color: Color(0xFFC575FF),
                   size: 22,
                 ),
 
@@ -1617,7 +1615,7 @@ class _SearchBox extends StatelessWidget {
 
                       icon: const Icon(
                         Icons.mic_none_rounded,
-                        color: Color(0xFFA855F7),
+                        color: Color(0xFFC575FF),
                         size: 21,
                       ),
                     );
@@ -1658,7 +1656,7 @@ class _SearchBox extends StatelessWidget {
                       children: [
                         const Icon(
                           Icons.history_rounded,
-                          color: Color(0xFFA855F7),
+                          color: Color(0xFFC575FF),
                           size: 16,
                         ),
 
@@ -1683,7 +1681,7 @@ class _SearchBox extends StatelessWidget {
                             'Clear',
 
                             style: TextStyle(
-                              color: Color(0xFFA855F7),
+                              color: Color(0xFFC575FF),
                               fontSize: 10,
                               fontWeight: FontWeight.w700,
                             ),
@@ -2041,7 +2039,7 @@ class _SearchResults extends StatelessWidget {
           if (isLoading) ...[
             const LinearProgressIndicator(
               minHeight: 2,
-              color: Color(0xFFA855F7),
+              color: Color(0xFFC575FF),
             ),
             const SizedBox(height: 10),
           ],
@@ -2555,7 +2553,7 @@ class _SearchLoading extends StatelessWidget {
             height: 30,
             child: CircularProgressIndicator(
               strokeWidth: 2.5,
-              color: Color(0xFFA855F7),
+              color: Color(0xFFC575FF),
             ),
           ),
           SizedBox(height: 14),
@@ -2593,7 +2591,7 @@ class _SearchError extends StatelessWidget {
         children: [
           const Icon(
             Icons.wifi_off_rounded,
-            color: Color(0xFFA855F7),
+            color: Color(0xFFC575FF),
             size: 34,
           ),
           const SizedBox(height: 12),
@@ -2675,7 +2673,7 @@ class _SongArtworkFallback extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerHighest,
       child: const Icon(
         Icons.music_note_rounded,
-        color: Color(0xFFA855F7),
+        color: Color(0xFFC575FF),
         size: 24,
       ),
     );

@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 
 import '../data/songs_data.dart';
@@ -32,14 +30,13 @@ class LibraryScreen extends StatefulWidget {
 }
 
 class _LibraryScreenState extends State<LibraryScreen> {
-  static const Color purple = Color(0xFF9B6BFF);
-  static const Color purpleDark = Color(0xFF5B21B6);
+  static const Color purple = Color(0xFF913CFF);
+  static const Color purpleDark = Color(0xFF5417A8);
 
   int _selectedFilter = -1;
   int _selectedTab = 0;
   List<SongModel> _indianSongs = const <SongModel>[];
   List<SongModel> _fullSongs = const <SongModel>[];
-  bool _isLoadingCatalogue = true;
   bool _initialCollectionOpened = false;
 
   @override
@@ -49,7 +46,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
     if (widget.initialFilter != null) {
       _selectedFilter = widget.initialFilter!;
     }
-    _selectedTab = widget.initialTab.clamp(0, 4);
+    // Preserve legacy navigation indices from Home/other screens:
+    // 0 = All, 1 (old Songs) = All, 2 = Albums, 3 = Artists, 4 = Playlists.
+    _selectedTab = switch (widget.initialTab) {
+      2 => 1,
+      3 => 2,
+      4 => 3,
+      _ => 0,
+    };
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCatalogue();
@@ -67,14 +71,12 @@ class _LibraryScreenState extends State<LibraryScreen> {
       setState(() {
         _indianSongs = results[0];
         _fullSongs = results[1];
-        _isLoadingCatalogue = false;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openInitialCollectionIfNeeded();
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _isLoadingCatalogue = false);
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _openInitialCollectionIfNeeded();
       });
@@ -186,7 +188,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       case 1:
         return player.recentlyPlayed;
       default:
-        return _catalogue;
+        return player.likedSongs;
     }
   }
 
@@ -203,11 +205,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
   }
 
   Color _muted(BuildContext context) {
-    return Theme.of(context).colorScheme.onSurfaceVariant;
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFFA9A1B8)
+        : Theme.of(context).colorScheme.onSurfaceVariant;
   }
 
   Color _border(BuildContext context) {
-    return Theme.of(context).dividerColor;
+    return Theme.of(context).brightness == Brightness.dark
+        ? const Color(0xFF30243F)
+        : Theme.of(context).dividerColor;
   }
 
   // ============================================================
@@ -249,7 +255,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             // FIXED HEADER
             // ====================================================
             Padding(
-              padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
+              padding: const EdgeInsets.fromLTRB(8, 16, 8, 0),
               child: _buildHeader(context),
             ),
 
@@ -266,7 +272,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
 
                   if (!_showingFilteredSongs)
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(10, 20, 10, 0),
+                      padding: const EdgeInsets.fromLTRB(8, 20, 8, 0),
                       sliver: SliverToBoxAdapter(child: _buildFilters(context)),
                     ),
 
@@ -274,52 +280,20 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   // PLAYLISTS
                   // ====================================================
                   if (!_showingFilteredSongs &&
-                      (_selectedTab == 0 || _selectedTab == 4))
+                      (_selectedTab == 0 || _selectedTab == 3))
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(10, 18, 10, 0),
+                      padding: const EdgeInsets.fromLTRB(8, 18, 8, 0),
                       sliver: SliverToBoxAdapter(
                         child: _buildLibrarySummary(context, player),
                       ),
                     ),
 
                   if (!_showingFilteredSongs &&
-                      (_selectedTab == 0 || _selectedTab == 4))
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(10, 24, 10, 0),
-                      sliver: SliverToBoxAdapter(
-                        child: _buildPlaylistsSection(
-                          context,
-                          player,
-                          vertical: _selectedTab == 4,
-                        ),
-                      ),
-                    ),
-
-                  // ====================================================
-                  // ALBUMS
-                  // ====================================================
-                  if (!_showingFilteredSongs &&
-                      (_selectedTab == 0 || _selectedTab == 2))
-                    SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(10, 24, 10, 0),
-                      sliver: SliverToBoxAdapter(
-                        child: _buildAlbumsSection(
-                          context,
-                          player,
-                          vertical: _selectedTab == 2,
-                        ),
-                      ),
-                    ),
-
-                  // ====================================================
-                  // ARTISTS
-                  // ====================================================
-                  if (!_showingFilteredSongs &&
                       (_selectedTab == 0 || _selectedTab == 3))
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(10, 24, 10, 0),
+                      padding: const EdgeInsets.fromLTRB(8, 24, 8, 0),
                       sliver: SliverToBoxAdapter(
-                        child: _buildArtistsSection(
+                        child: _buildPlaylistsSection(
                           context,
                           player,
                           vertical: _selectedTab == 3,
@@ -328,13 +302,34 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     ),
 
                   // ====================================================
-                  // SONG HEADER
+                  // ALBUMS
                   // ====================================================
-                  if (!_showingFilteredSongs && _selectedTab == 1)
+                  if (!_showingFilteredSongs &&
+                      (_selectedTab == 0 || _selectedTab == 1))
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(10, 26, 10, 12),
+                      padding: const EdgeInsets.fromLTRB(8, 24, 8, 0),
                       sliver: SliverToBoxAdapter(
-                        child: _buildSongsHeader(context),
+                        child: _buildAlbumsSection(
+                          context,
+                          player,
+                          vertical: _selectedTab == 1,
+                        ),
+                      ),
+                    ),
+
+                  // ====================================================
+                  // ARTISTS
+                  // ====================================================
+                  if (!_showingFilteredSongs &&
+                      (_selectedTab == 0 || _selectedTab == 2))
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(8, 24, 8, 0),
+                      sliver: SliverToBoxAdapter(
+                        child: _buildArtistsSection(
+                          context,
+                          player,
+                          vertical: _selectedTab == 2,
+                        ),
                       ),
                     ),
 
@@ -343,7 +338,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   // ====================================================
                   if (_showingFilteredSongs)
                     SliverPadding(
-                      padding: const EdgeInsets.fromLTRB(10, 24, 10, 12),
+                      padding: const EdgeInsets.fromLTRB(8, 24, 8, 12),
                       sliver: SliverToBoxAdapter(
                         child: Text(
                           '${filteredSongs.length} '
@@ -360,9 +355,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   // ====================================================
                   // SONG LIST
                   // ====================================================
-                  if (_showingFilteredSongs || _selectedTab == 1)
+                  if (_showingFilteredSongs)
                     SliverPadding(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
                       sliver: SliverToBoxAdapter(
                         child: _buildSongsList(context, player),
                       ),
@@ -436,7 +431,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   Widget _buildFilters(BuildContext context) {
     const List<String> labels = <String>[
       'All',
-      'Songs',
       'Albums',
       'Artists',
       'Playlists',
@@ -465,7 +459,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
               decoration: BoxDecoration(
                 gradient: selected
                     ? const LinearGradient(
-                        colors: [Color(0xFF9B6BFF), Color(0xFF6D32D1)],
+                        colors: [Color(0xFF913CFF), Color(0xFF6D32D1)],
                       )
                     : null,
                 color: selected ? null : _surface(context),
@@ -568,11 +562,9 @@ class _LibraryScreenState extends State<LibraryScreen> {
         height: 76,
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF171126), Color(0xFF110D1B)],
-          ),
+          color: _surface(context),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: purple.withValues(alpha: 0.20)),
+          border: Border.all(color: _border(context)),
         ),
         child: Row(
           children: [
@@ -625,127 +617,67 @@ class _LibraryScreenState extends State<LibraryScreen> {
     PlayerController player, {
     bool vertical = false,
   }) {
+    // Only playlists created by the user; no sample/demo playlists.
     final List<String> playlistNames = player.playlistNames;
-
-    const List<String> sampleTitles = <String>[
-      'Bollywood Essentials',
-      'Chill Nights',
-      'Full Track Mix',
-    ];
-
-    final int totalItems = sampleTitles.length + playlistNames.length;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
             Expanded(
-              child: Text(
-                'Playlists',
-                style: TextStyle(
-                  color: _text(context),
-                  fontSize: 20,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
+              child: Text('Playlists', style: TextStyle(
+                color: _text(context), fontSize: 20,
+                fontWeight: FontWeight.w800,
+              )),
             ),
-            GestureDetector(
-              onTap: () {
-                _showCreatePlaylistDialog(context, player);
-              },
+            InkWell(
+              onTap: () => _showCreatePlaylistDialog(context, player),
+              borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 11,
-                  vertical: 7,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
                 decoration: BoxDecoration(
-                  color: purple.withValues(alpha: 0.14),
+                  color: purple.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: purple.withValues(alpha: 0.20)),
+                  border: Border.all(color: purple.withValues(alpha: .30)),
                 ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.add_rounded, color: purple, size: 17),
-                    SizedBox(width: 4),
-                    Text(
-                      'Create',
-                      style: TextStyle(
-                        color: purple,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
+                child: const Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.add_rounded, color: Color(0xFFC575FF), size: 18),
+                  SizedBox(width: 5),
+                  Text('Create', style: TextStyle(color: Color(0xFFC575FF),
+                      fontSize: 12, fontWeight: FontWeight.w700)),
+                ]),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        if (!vertical)
+        if (playlistNames.isEmpty)
+          _emptyPlaylistCard(context)
+        else if (vertical)
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: playlistNames.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 3, crossAxisSpacing: 10,
+              mainAxisSpacing: 12, childAspectRatio: .72,
+            ),
+            itemBuilder: (context, index) => _playlistCard(
+              context, player, playlistNames[index],
+            ),
+          )
+        else
           SizedBox(
             height: 154,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
-              itemCount: totalItems,
+              itemCount: playlistNames.length,
               separatorBuilder: (_, _) => const SizedBox(width: 11),
-              itemBuilder: (context, index) {
-                if (index < sampleTitles.length) {
-                  return _smartPlaylistCard(
-                    context,
-                    player,
-                    sampleTitles[index],
-                    index,
-                  );
-                }
-
-                return _playlistCard(
-                  context,
-                  player,
-                  playlistNames[index - sampleTitles.length],
-                );
-              },
-            ),
-          )
-        else
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: totalItems,
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 10,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 0.72,
-                ),
-                itemBuilder: (context, index) {
-                  if (index < sampleTitles.length) {
-                    return _smartPlaylistCard(
-                      context,
-                      player,
-                      sampleTitles[index],
-                      index,
-                      width: double.infinity,
-                    );
-                  }
-
-                  return _playlistCard(
-                    context,
-                    player,
-                    playlistNames[index - sampleTitles.length],
-                  );
-                },
+              itemBuilder: (context, index) => _playlistCard(
+                context, player, playlistNames[index],
               ),
-              if (playlistNames.isEmpty) ...[
-                const SizedBox(height: 16),
-                _emptyPlaylistCard(context),
-              ],
-            ],
+            ),
           ),
       ],
     );
@@ -892,100 +824,11 @@ class _LibraryScreenState extends State<LibraryScreen> {
     );
   }
 
-  Widget _smartPlaylistCard(
-    BuildContext context,
-    PlayerController player,
-    String title,
-    int index, {
-    double width = 104,
-  }) {
-    final List<SongModel> songs = _smartPlaylistSongs(index);
-    final SongModel? cover = songs.isEmpty ? null : songs.first;
-
-    return GestureDetector(
-      onTap: () {
-        _showSongListBottomSheet(
-          context,
-          title: title,
-          subtitle: '${songs.length} songs',
-          songs: songs,
-          player: player,
-        );
-      },
-      child: SizedBox(
-        width: width,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16),
-                child: cover == null
-                    ? _playlistPlaceholder()
-                    : _libraryImage(
-                        cover.imagePath,
-                        width: width,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => _playlistPlaceholder(),
-                      ),
-              ),
-            ),
-            const SizedBox(height: 7),
-            Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: _text(context),
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'SONEXA Mix',
-              style: TextStyle(color: _muted(context), fontSize: 10),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  List<SongModel> _smartPlaylistSongs(int index) {
-    if (_catalogue.isEmpty) return const <SongModel>[];
-
-    const List<List<String>> keywords = <List<String>>[
-      <String>['bollywood', 'hindi', 'india'],
-      <String>['chill', 'lo-fi', 'acoustic'],
-      <String>['jamendo', 'audius', 'full'],
-    ];
-
-    final List<String> selected = keywords[index];
-    if (selected.isEmpty) return _catalogue.take(20).toList();
-
-    final List<SongModel> matches = _catalogue
-        .where((song) {
-          final String text = <String>[
-            song.title,
-            song.album,
-            song.artist,
-            song.source,
-            ...song.tags,
-          ].join(' ').toLowerCase();
-          return selected.any(text.contains);
-        })
-        .take(20)
-        .toList();
-
-    return matches.isEmpty ? _catalogue.take(20).toList() : matches;
-  }
-
   Widget _playlistPlaceholder() {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          colors: [Color(0xFF9B6BFF), Color(0xFF401080)],
+          colors: [Color(0xFF913CFF), Color(0xFF401080)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -1049,9 +892,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 borderSide: BorderSide(color: purple.withValues(alpha: 0.5)),
               ),
             ),
-            onSubmitted: (_) {
-              _createPlaylist(dialogContext, player, controller.text);
-            },
+            onSubmitted: (_) => FocusScope.of(dialogContext).unfocus(),
           ),
           actions: [
             TextButton(
@@ -1362,21 +1203,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
       }
     }
 
-    final List<SongModel> sampleAlbums = catalogueAlbums.values
-        .take(4)
-        .toList();
-
     final List<SongModel> savedAlbums = player.savedAlbumNames
         .map((String name) => player.getSavedAlbumSongs(name))
         .where((List<SongModel> songs) => songs.isNotEmpty)
         .map((List<SongModel> songs) => songs.first)
         .toList();
 
-    final List<SongModel> albumSongs = vertical
-        ? (widget.showAllCollections
-              ? catalogueAlbums.values.toList()
-              : savedAlbums)
-        : sampleAlbums;
+    final List<SongModel> albumSongs = widget.showAllCollections
+        ? catalogueAlbums.values.toList()
+        : savedAlbums;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1388,15 +1223,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ? widget.showAllCollections
                     ? '${albumSongs.length} albums'
                     : '${albumSongs.length} saved'
-              : '${albumSongs.length} samples',
+              : '${albumSongs.length} saved',
         ),
         const SizedBox(height: 11),
-        if (vertical && albumSongs.isEmpty)
+        if (albumSongs.isEmpty)
           _emptySavedCollection(
             context,
             icon: Icons.album_outlined,
             title: 'No saved albums yet',
-            message: 'Open a sample album and tap the save icon.',
+            message: 'Save an album to see it in your Library.',
           )
         else if (!vertical)
           SizedBox(
@@ -1607,7 +1442,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     final List<MapEntry<String, SongModel>> entries =
         <MapEntry<String, SongModel>>[];
 
-    if (vertical && !widget.showAllCollections) {
+    if (!widget.showAllCollections) {
       for (final String name in player.savedArtistNames) {
         final List<SongModel> songs = player.getSavedArtistSongs(name);
         if (songs.isNotEmpty) {
@@ -1643,15 +1478,15 @@ class _LibraryScreenState extends State<LibraryScreen> {
               ? widget.showAllCollections
                     ? '${artists.length} artists'
                     : '${artists.length} saved'
-              : '${artists.length} samples',
+              : '${artists.length} saved',
         ),
         const SizedBox(height: 11),
-        if (vertical && artists.isEmpty)
+        if (artists.isEmpty)
           _emptySavedCollection(
             context,
             icon: Icons.person_outline_rounded,
             title: 'No saved artists yet',
-            message: 'Open a sample artist and tap the save icon.',
+            message: 'Save an artist to see them in your Library.',
           )
         else if (!vertical)
           SizedBox(
@@ -1880,31 +1715,6 @@ class _LibraryScreenState extends State<LibraryScreen> {
   // ============================================================
   // SONG HEADER
   // ============================================================
-
-  Widget _buildSongsHeader(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            'All Songs',
-            style: TextStyle(
-              color: _text(context),
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-        ),
-        Text(
-          _isLoadingCatalogue ? 'Loading songs…' : '${_catalogue.length} songs',
-          style: TextStyle(
-            color: _muted(context),
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
 
   // ============================================================
   // SONG LIST

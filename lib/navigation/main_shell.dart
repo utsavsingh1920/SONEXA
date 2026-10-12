@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../player/player_controller.dart';
+import '../player/player_scope.dart';
 import '../screens/home_screen.dart';
 import '../screens/search_screen.dart';
 import '../screens/library_screen.dart';
 import '../screens/settings_screen.dart';
+import '../theme/app_theme.dart';
 import '../widgets/mini_player.dart';
 
 class MainShell extends StatefulWidget {
@@ -15,526 +16,147 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  // ============================================================
-  // PAGE CONTROLLER
-  // ============================================================
-
-  final PageController _pageController = PageController();
-
-  // ============================================================
-  // PLAYER
-  // ============================================================
-
-  final PlayerController player = PlayerController();
-
-  // ============================================================
-  // NAVIGATION
-  // ============================================================
-
   int selectedIndex = 0;
 
-  // ============================================================
-  // SWIPE VARIABLES
-  // ============================================================
-
-  double _dragStartPixels = 0.0;
-
-  bool _isDragging = false;
-
-  static const double _minimumSwipeDistance = 10.0;
-  static const double _fastSwipeVelocity = 200.0;
-  static const double _normalSwipePageThreshold = 0.12;
-
-  // ============================================================
-  // BOTTOM NAVIGATION PAGE CHANGE
-  // ============================================================
+  static const List<Widget> _pages = <Widget>[
+    HomeScreen(),
+    SearchScreen(),
+    LibraryScreen(),
+    SettingsScreen(),
+  ];
 
   void _changePage(int index) {
-    if (index == selectedIndex) return;
-
-    setState(() {
-      selectedIndex = index;
-    });
-
-    _pageController.animateToPage(
-      index,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
-    );
+    if (index < 0 || index >= _pages.length || index == selectedIndex) return;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() => selectedIndex = index);
   }
-
-  // ============================================================
-  // SWIPE START
-  // ============================================================
-
-  void _onHorizontalDragStart(
-    DragStartDetails details,
-  ) {
-    if (!_pageController.hasClients) return;
-
-    _isDragging = true;
-
-    _dragStartPixels =
-        _pageController.position.pixels;
-  }
-
-  // ============================================================
-  // SWIPE UPDATE
-  // ============================================================
-
-  void _onHorizontalDragUpdate(
-    DragUpdateDetails details,
-  ) {
-    if (!_isDragging ||
-        !_pageController.hasClients) {
-      return;
-    }
-
-    final ScrollPosition position =
-        _pageController.position;
-
-    final double newPixels =
-        position.pixels - details.delta.dx;
-
-    final double clampedPixels =
-        newPixels.clamp(
-      position.minScrollExtent,
-      position.maxScrollExtent,
-    );
-
-    _pageController.jumpTo(
-      clampedPixels,
-    );
-  }
-
-  // ============================================================
-  // SWIPE END
-  // ============================================================
-
-  void _onHorizontalDragEnd(
-    DragEndDetails details,
-  ) {
-    if (!_isDragging ||
-        !_pageController.hasClients) {
-      return;
-    }
-
-    _isDragging = false;
-
-    final double currentPixels =
-        _pageController.position.pixels;
-
-    final double pageWidth =
-        _pageController.position.viewportDimension;
-
-    if (pageWidth <= 0) return;
-
-    final double currentPage =
-        currentPixels / pageWidth;
-
-    final double velocity =
-        details.primaryVelocity ?? 0.0;
-
-    final int startPage =
-        (_dragStartPixels / pageWidth).round();
-
-    int targetPage = startPage;
-
-    // ==========================================================
-    // FAST FLICK
-    // ==========================================================
-
-    if (velocity.abs() >= _fastSwipeVelocity &&
-        (currentPixels - _dragStartPixels).abs() >=
-            _minimumSwipeDistance) {
-      if (velocity < 0) {
-        targetPage = startPage + 1;
-      } else {
-        targetPage = startPage - 1;
-      }
-    }
-
-    // ==========================================================
-    // NORMAL DRAG
-    // ==========================================================
-
-    else {
-      final double movedPages =
-          currentPage - startPage;
-
-      if (movedPages.abs() >=
-          _normalSwipePageThreshold) {
-        if (movedPages > 0) {
-          targetPage = startPage + 1;
-        } else {
-          targetPage = startPage - 1;
-        }
-      } else {
-        targetPage = startPage;
-      }
-    }
-
-    // ==========================================================
-    // SAFETY
-    // ==========================================================
-
-    targetPage =
-        targetPage.clamp(0, 3);
-
-    // ==========================================================
-    // UPDATE SELECTED TAB
-    // ==========================================================
-
-    if (targetPage != selectedIndex) {
-      setState(() {
-        selectedIndex = targetPage;
-      });
-    }
-
-    // ==========================================================
-    // SMOOTH SETTLE
-    // ==========================================================
-
-    _pageController.animateToPage(
-      targetPage,
-      duration: const Duration(milliseconds: 190),
-      curve: Curves.easeOutCubic,
-    );
-  }
-
-  // ============================================================
-  // DISPOSE
-  // ============================================================
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    player.dispose();
-
-    super.dispose();
-  }
-
-  // ============================================================
-  // BUILD
-  // ============================================================
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData theme =
-        Theme.of(context);
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final primary = theme.colorScheme.primary;
+    final background = isDark ? AppTheme.background : AppTheme.lightBackground;
+    final surface = isDark ? const Color(0xFF130D20) : Colors.white;
+    final border = isDark ? const Color(0xFF302342) : const Color(0xFFE5DCEE);
+    final selectedFill = isDark ? const Color(0xFF442079) : const Color(0xFFF0E4FF);
+    final activeColor = isDark ? const Color(0xFFDCC2FF) : const Color(0xFF7124C8);
+    final inactiveColor = isDark ? const Color(0xFFAEA2C0) : const Color(0xFF867993);
 
-    final bool isDark =
-        theme.brightness == Brightness.dark;
-
-    // ==========================================================
-    // THEME COLORS
-    // ==========================================================
-
-    final Color scaffoldBackground =
-        theme.scaffoldBackgroundColor;
-
-    final Color navBackground = isDark
-        ? const Color(0xFF111019)
-        : const Color(0xFFFFFFFF);
-
-    // IMPORTANT:
-    // Dark mode = dark border
-    // Light mode = light border
-    final Color navBorder = isDark
-        ? const Color(0xFF292231)
-        : const Color(0xFFE3DDE9);
-
-    final Color selectedBackground = isDark
-        ? const Color(0xFF2B193F)
-        : const Color(0xFFF0E7FA);
-
-    final Color selectedColor =
-        theme.colorScheme.primary;
-
-    final Color unselectedColor = isDark
-        ? const Color(0xFF777080)
-        : const Color(0xFF817989);
-
+    // The playback controller already lives in PlayerScope (created in main.dart).
+    // Do not create/dispose another controller here.
+    final player = PlayerScope.of(context);
     return AnimatedBuilder(
       animation: player,
-      builder: (context, _) {
-        return Scaffold(
-          backgroundColor:
-              scaffoldBackground,
-
-          // ====================================================
-          // KEYBOARD OPEN HONE PAR
-          // NAVIGATION BAR / MINI PLAYER UPAR NAHI JAYEGA
-          // ====================================================
-
+      builder: (context, _) => PopScope(
+        canPop: selectedIndex == 0,
+        onPopInvokedWithResult: (didPop, result) {
+          if (!didPop && selectedIndex != 0 && mounted) _changePage(0);
+        },
+        child: Scaffold(
+          backgroundColor: background,
           resizeToAvoidBottomInset: false,
-
           body: Stack(
             children: [
-              // ==================================================
-              // MAIN PAGES
-              // ==================================================
-
               Positioned.fill(
-                child: GestureDetector(
-                  behavior:
-                      HitTestBehavior.opaque,
-
-                  onHorizontalDragStart:
-                      _onHorizontalDragStart,
-
-                  onHorizontalDragUpdate:
-                      _onHorizontalDragUpdate,
-
-                  onHorizontalDragEnd:
-                      _onHorizontalDragEnd,
-
-                  child: PageView(
-                    controller:
-                        _pageController,
-
-                    // Manual swipe handling.
-                    physics:
-                        const NeverScrollableScrollPhysics(),
-
-                    onPageChanged: (index) {
-                      if (!mounted) return;
-
-                      setState(() {
-                        selectedIndex = index;
-                      });
-                    },
-
-                    children: const [
-                      HomeScreen(),
-                      SearchScreen(),
-                      LibraryScreen(),
-                      SettingsScreen(),
-                    ],
-                  ),
-                ),
+                child: IndexedStack(index: selectedIndex, children: _pages),
               ),
-
-              // ==================================================
-              // MINI PLAYER + BOTTOM NAVIGATION
-              // ==================================================
-
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: Column(
-                  mainAxisSize:
-                      MainAxisSize.min,
-                  children: [
-                    // =================================================
-                    // MINI PLAYER
-                    // =================================================
-
-                    const MiniPlayer(),
-
-                    // =================================================
-                    // BOTTOM NAVIGATION
-                    // =================================================
-
-                    Container(
-                      height: 54,
-                      // Exact 2px outer margin on both sides.
-                      width: MediaQuery.sizeOf(context).width - 4,
-
-                      padding:
-                          const EdgeInsets.symmetric(
-                        horizontal: 18,
-                        vertical: 6,
-                      ),
-
-                      decoration:
-                          BoxDecoration(
-                        color:
-                            navBackground,
-
-                        borderRadius:
-                            BorderRadius.circular(18),
-
-                        // Dark = dark border
-                        // Light = light border
-                        border: Border.all(
-                          color: navBorder,
-                          width: 1,
+                child: SafeArea(
+                  top: false,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Keep the existing mini-player and its music controls.
+                      const MiniPlayer(),
+                      Container(
+                        height: 60,
+                        margin: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: surface,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: border, width: 1),
                         ),
-
-                        boxShadow: [
-                          BoxShadow(
-                            color: isDark
-                                ? Colors.black.withValues(
-                                    alpha: 0.33,
-                                  )
-                                : Colors.black.withValues(
-                                    alpha: 0.10,
-                                  ),
-                            blurRadius: 18,
-                            offset:
-                                const Offset(0, 7),
-                          ),
-                        ],
+                        child: Row(
+                          children: [
+                            _navItem(0, Icons.home_rounded, 'Home', primary,
+                                activeColor, inactiveColor, selectedFill),
+                            _navItem(1, Icons.search_rounded, 'Search', primary,
+                                activeColor, inactiveColor, selectedFill),
+                            _navItem(2, Icons.library_music_rounded, 'Library',
+                                primary, activeColor, inactiveColor, selectedFill),
+                            _navItem(3, Icons.settings_rounded, 'Settings',
+                                primary, activeColor, inactiveColor, selectedFill),
+                          ],
+                        ),
                       ),
-
-                      child: Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment
-                                .spaceBetween,
-
-                        children: [
-                          // =================================================
-                          // HOME
-                          // =================================================
-
-                          _navItem(
-                            index: 0,
-                            icon:
-                                Icons.home_rounded,
-                            label: 'Home',
-                            selectedColor:
-                                selectedColor,
-                            unselectedColor:
-                                unselectedColor,
-                            selectedBackground:
-                                selectedBackground,
-                          ),
-
-                          // =================================================
-                          // SEARCH
-                          // =================================================
-
-                          _navItem(
-                            index: 1,
-                            icon:
-                                Icons.search_rounded,
-                            label: 'Search',
-                            selectedColor:
-                                selectedColor,
-                            unselectedColor:
-                                unselectedColor,
-                            selectedBackground:
-                                selectedBackground,
-                          ),
-
-                          // =================================================
-                          // LIBRARY
-                          // =================================================
-
-                          _navItem(
-                            index: 2,
-                            icon:
-                                Icons.library_music_rounded,
-                            label: 'Library',
-                            selectedColor:
-                                selectedColor,
-                            unselectedColor:
-                                unselectedColor,
-                            selectedBackground:
-                                selectedBackground,
-                          ),
-
-                          // =================================================
-                          // SETTINGS
-                          // =================================================
-
-                          _navItem(
-                            index: 3,
-                            icon:
-                                Icons.settings_rounded,
-                            label: 'Settings',
-                            selectedColor:
-                                selectedColor,
-                            unselectedColor:
-                                unselectedColor,
-                            selectedBackground:
-                                selectedBackground,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
-  // ============================================================
-  // NAV ITEM
-  // ============================================================
-
-  Widget _navItem({
-    required int index,
-    required IconData icon,
-    required String label,
-    required Color selectedColor,
-    required Color unselectedColor,
-    required Color selectedBackground,
-  }) {
-    final bool isSelected =
-        selectedIndex == index;
-
-    return GestureDetector(
-      behavior:
-          HitTestBehavior.opaque,
-
-      onTap: () {
-        _changePage(index);
-      },
-
-      child: AnimatedContainer(
-        duration:
-            const Duration(milliseconds: 160),
-
-        curve:
-            Curves.easeOut,
-
-        width: 68,
-        height: 42,
-
-        decoration: BoxDecoration(
-          color: isSelected
-              ? selectedBackground
-              : Colors.transparent,
-
-          borderRadius:
-              BorderRadius.circular(14),
-        ),
-
-        child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
-
-          children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected
-                  ? selectedColor
-                  : unselectedColor,
-            ),
-
-            const SizedBox(height: 2),
-
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                fontWeight: isSelected
-                    ? FontWeight.w700
-                    : FontWeight.w500,
-                color: isSelected
-                    ? selectedColor
-                    : unselectedColor,
+  Widget _navItem(
+    int index,
+    IconData icon,
+    String label,
+    Color primary,
+    Color activeColor,
+    Color inactiveColor,
+    Color selectedFill,
+  ) {
+    final selected = index == selectedIndex;
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _changePage(index),
+            borderRadius: BorderRadius.circular(14),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 170),
+              curve: Curves.easeOutCubic,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected ? selectedFill : Colors.transparent,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: selected ? primary.withValues(alpha: 0.28) : Colors.transparent,
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 23, color: selected ? activeColor : inactiveColor),
+                  const SizedBox(height: 3),
+                  Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 10,
+                      height: 1.1,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                      color: selected ? activeColor : inactiveColor,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );

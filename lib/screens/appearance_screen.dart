@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import '../theme/theme_controller.dart';
 
 class AppearanceScreen extends StatefulWidget {
@@ -11,340 +10,173 @@ class AppearanceScreen extends StatefulWidget {
 }
 
 class _AppearanceScreenState extends State<AppearanceScreen> {
+  static const _purple = Color(0xFF913CFF);
+  static const _accent = Color(0xFFC575FF);
   ThemeMode _selectedTheme = ThemeMode.system;
-
-  static const String _themeKey = 'theme_mode';
 
   @override
   void initState() {
     super.initState();
-    _loadTheme();
+    _loadSavedTheme();
   }
 
-  Future<void> _loadTheme() async {
+  Future<void> _loadSavedTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    final savedTheme = prefs.getString(_themeKey);
-
-    ThemeMode mode;
-
-    switch (savedTheme) {
-      case 'dark':
-        mode = ThemeMode.dark;
-        break;
-
-      case 'light':
-        mode = ThemeMode.light;
-        break;
-
-      case 'system':
-      default:
-        mode = ThemeMode.system;
-        break;
-    }
-
+    final saved = prefs.getString('theme_mode');
     if (!mounted) return;
-
     setState(() {
-      _selectedTheme = mode;
+      _selectedTheme = switch (saved) {
+        'dark' => ThemeMode.dark,
+        'light' => ThemeMode.light,
+        _ => ThemeMode.system,
+      };
     });
   }
 
   Future<void> _changeTheme(ThemeMode mode) async {
-    setState(() {
-      _selectedTheme = mode;
-    });
-
-    final prefs = await SharedPreferences.getInstance();
-
-    String value;
-
-    switch (mode) {
-      case ThemeMode.dark:
-        value = 'dark';
-        break;
-
-      case ThemeMode.light:
-        value = 'light';
-        break;
-
-      case ThemeMode.system:
-        value = 'system';
-        break;
+    if (_selectedTheme == mode) return;
+    setState(() => _selectedTheme = mode);
+    try {
+      // The existing controller owns global theme state and persistence.
+      await ThemeController.instance.setThemeMode(mode);
+    } catch (_) {
+      if (!mounted) return;
+      await _loadSavedTheme();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not change appearance. Try again.')),
+      );
     }
-
-    await prefs.setString(_themeKey, value);
-
-    // Apply theme globally.
-    await ThemeController.instance.setThemeMode(mode);
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colors = theme.colorScheme;
+    final dark = theme.brightness == Brightness.dark;
+    final background = theme.scaffoldBackgroundColor;
+    final surface = dark ? const Color(0xFF151020) : Colors.white;
+    final border = dark ? const Color(0xFF30243F) : const Color(0xFFE4DDED);
+    final text = theme.colorScheme.onSurface;
+    final muted = dark ? const Color(0xFFA9A1B8) : const Color(0xFF756D7D);
 
     return Scaffold(
-      backgroundColor: colors.surface,
-
+      backgroundColor: background,
       appBar: AppBar(
-        backgroundColor: colors.surface,
+        backgroundColor: background,
+        surfaceTintColor: Colors.transparent,
         elevation: 0,
-        scrolledUnderElevation: 0,
-
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: colors.onSurface,
-          ),
-          onPressed: () => Navigator.pop(context),
+          icon: Icon(Icons.arrow_back_rounded, color: text),
+          onPressed: () => Navigator.of(context).pop(),
         ),
-
-        title: Text(
-          'Appearance',
-          style: TextStyle(
-            color: colors.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: Text('Appearance', style: TextStyle(
+          color: text, fontSize: 20, fontWeight: FontWeight.w800,
+        )),
       ),
-
       body: ListView(
         physics: const BouncingScrollPhysics(),
-
-        padding: const EdgeInsets.fromLTRB(
-          20,
-          10,
-          20,
-          30,
-        ),
-
+        padding: const EdgeInsets.fromLTRB(8, 12, 8, 30),
         children: [
-          Text(
-            'THEME',
-            style: TextStyle(
-              color: colors.onSurface.withValues(alpha: 0.55),
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.1,
-            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text('CHOOSE YOUR THEME', style: TextStyle(
+              color: muted, fontSize: 11, letterSpacing: 1.1,
+              fontWeight: FontWeight.w800,
+            )),
           ),
-
           const SizedBox(height: 12),
-
-          _themeOption(
-            context,
-            title: 'Dark',
-            subtitle: 'Best for nighttime listening',
-            icon: Icons.dark_mode_rounded,
-            mode: ThemeMode.dark,
+          _option(
+            title: 'Dark', subtitle: 'A comfortable listening experience',
+            icon: Icons.dark_mode_rounded, mode: ThemeMode.dark,
+            text: text, muted: muted, surface: surface, border: border,
           ),
-
-          _themeOption(
-            context,
-            title: 'Light',
-            subtitle: 'Use SONEXA with a bright theme',
-            icon: Icons.light_mode_rounded,
-            mode: ThemeMode.light,
+          _option(
+            title: 'Light', subtitle: 'Clean and bright appearance',
+            icon: Icons.light_mode_rounded, mode: ThemeMode.light,
+            text: text, muted: muted, surface: surface, border: border,
           ),
-
-          _themeOption(
-            context,
-            title: 'System Default',
-            subtitle: 'Follow your device settings',
-            icon: Icons.settings_suggest_rounded,
-            mode: ThemeMode.system,
+          _option(
+            title: 'System Default', subtitle: 'Match your device appearance',
+            icon: Icons.settings_suggest_rounded, mode: ThemeMode.system,
+            text: text, muted: muted, surface: surface, border: border,
           ),
-
-          const SizedBox(height: 28),
-
+          const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.all(18),
-
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest.withValues(
-                alpha: theme.brightness == Brightness.dark
-                    ? 0.35
-                    : 0.55,
-              ),
-
-              borderRadius: BorderRadius.circular(18),
-
-              border: Border.all(
-                color: colors.onSurface.withValues(
-                  alpha: 0.06,
-                ),
-              ),
+              color: surface, borderRadius: BorderRadius.circular(17),
+              border: Border.all(color: border),
             ),
-
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  Icons.palette_outlined,
-                  color: colors.primary,
-                  size: 25,
-                ),
-
-                const SizedBox(width: 14),
-
-                Expanded(
-                  child: Text(
-                    'Appearance changes how SONEXA looks throughout the app.',
-                    style: TextStyle(
-                      color: colors.onSurface.withValues(
-                        alpha: 0.65,
-                      ),
-                      fontSize: 13,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            child: Row(children: [
+              const Icon(Icons.palette_outlined, color: _accent, size: 22),
+              const SizedBox(width: 12),
+              Expanded(child: Text(
+                'Your selection applies across SONEXA and is saved for next time.',
+                style: TextStyle(color: muted, fontSize: 12.5, height: 1.4),
+              )),
+            ]),
           ),
         ],
       ),
     );
   }
 
-  Widget _themeOption(
-    BuildContext context, {
+  Widget _option({
     required String title,
     required String subtitle,
     required IconData icon,
     required ThemeMode mode,
+    required Color text,
+    required Color muted,
+    required Color surface,
+    required Color border,
   }) {
-    final theme = Theme.of(context);
-    final colors = theme.colorScheme;
-
-    final bool isSelected = _selectedTheme == mode;
-
-    final bool isDark =
-        theme.brightness == Brightness.dark;
-
-    final Color cardColor = isDark
-        ? const Color(0xFF11111D)
-        : colors.surfaceContainerHighest;
-
-    final Color mutedColor = colors.onSurface.withValues(
-      alpha: 0.55,
-    );
-
+    final selected = _selectedTheme == mode;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-
+      padding: const EdgeInsets.only(bottom: 10),
       child: Material(
         color: Colors.transparent,
-
         child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-
           onTap: () => _changeTheme(mode),
-
+          borderRadius: BorderRadius.circular(17),
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 220),
-
-            padding: const EdgeInsets.all(17),
-
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 15),
             decoration: BoxDecoration(
-              color: isSelected
-                  ? colors.primary.withValues(alpha: 0.10)
-                  : cardColor,
-
-              borderRadius: BorderRadius.circular(18),
-
+              color: selected ? _purple.withValues(alpha: 0.11) : surface,
+              borderRadius: BorderRadius.circular(17),
               border: Border.all(
-                color: isSelected
-                    ? colors.primary.withValues(alpha: 0.45)
-                    : colors.onSurface.withValues(
-                        alpha: 0.05,
-                      ),
+                color: selected ? _purple : border,
+                width: selected ? 1.25 : 1,
               ),
             ),
-
-            child: Row(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 220),
-
-                  width: 45,
-                  height: 45,
-
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors.primary.withValues(
-                            alpha: 0.15,
-                          )
-                        : colors.onSurface.withValues(
-                            alpha: 0.05,
-                          ),
-
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-
-                  child: Icon(
-                    icon,
-
-                    color: isSelected
-                        ? colors.primary
-                        : mutedColor,
-                  ),
+            child: Row(children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(
+                  color: _purple.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(13),
                 ),
-
-                const SizedBox(width: 14),
-
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
-
-                    children: [
-                      Text(
-                        title,
-
-                        style: TextStyle(
-                          color: colors.onSurface,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-
-                      const SizedBox(height: 4),
-
-                      Text(
-                        subtitle,
-
-                        style: TextStyle(
-                          color: mutedColor,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                AnimatedSwitcher(
-                  duration: const Duration(
-                    milliseconds: 180,
-                  ),
-
-                  child: Icon(
-                    isSelected
-                        ? Icons.radio_button_checked_rounded
-                        : Icons.radio_button_off_rounded,
-
-                    key: ValueKey<bool>(isSelected),
-
-                    color: isSelected
-                        ? colors.primary
-                        : colors.onSurface.withValues(
-                            alpha: 0.35,
-                          ),
-                  ),
-                ),
-              ],
-            ),
+                child: Icon(icon, color: selected ? _accent : muted, size: 23),
+              ),
+              const SizedBox(width: 13),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: TextStyle(
+                    color: text, fontSize: 14.5, fontWeight: FontWeight.w700,
+                  )),
+                  const SizedBox(height: 4),
+                  Text(subtitle, style: TextStyle(color: muted, fontSize: 11.5)),
+                ],
+              )),
+              Icon(
+                selected ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color: selected ? _accent : muted,
+                size: 22,
+              ),
+            ]),
           ),
         ),
       ),

@@ -1,863 +1,1187 @@
 import 'dart:async';
-import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
+import 'package:flutter/services.dart';
 
 import '../main.dart';
 
 class SplashScreen extends StatefulWidget {
+
   const SplashScreen({super.key});
 
   @override
+
   State<SplashScreen> createState() => _SplashScreenState();
+
 }
 
 class _SplashScreenState extends State<SplashScreen>
+
     with SingleTickerProviderStateMixin {
+
   late final AnimationController _controller;
-  late final Animation<double> _fadeAnimation;
-  late final Animation<double> _scaleAnimation;
+
+  Timer? _timer;
 
   @override
+
   void initState() {
+
     super.initState();
 
     _controller = AnimationController(
+
       vsync: this,
+
       duration: const Duration(milliseconds: 950),
-    );
 
-    _fadeAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    );
+    )..forward();
 
-    _scaleAnimation = Tween<double>(
-      begin: 0.94,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+    _timer = Timer(const Duration(milliseconds: 1500), _openApp);
 
-    _controller.forward();
-
-    // Final splash duration = 1.5 seconds
-    Timer(
-      const Duration(milliseconds: 1500),
-      _openApp,
-    );
   }
 
   void _openApp() {
+
     if (!mounted) return;
 
     Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        transitionDuration: const Duration(milliseconds: 250),
-        pageBuilder: (_, animation, _) => const AuthGate(),
-        transitionsBuilder: (_, animation, _, child) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
+
+      PageRouteBuilder<void>(
+
+        pageBuilder: (_, animation, secondaryAnimation) => const AuthGate(),
+
+        transitionDuration: const Duration(milliseconds: 350),
+
+        transitionsBuilder: (_, animation, secondaryAnimation, child) =>
+
+            FadeTransition(opacity: animation, child: child),
+
       ),
+
     );
+
   }
 
   @override
+
   void dispose() {
+
+    _timer?.cancel();
+
     _controller.dispose();
+
     super.dispose();
+
   }
 
   @override
+
   Widget build(BuildContext context) {
-    final bool isDark =
-        Theme.of(context).brightness == Brightness.dark;
 
-    final Color primaryText =
-        isDark ? Colors.white : const Color(0xFF17121F);
-    final Color softText =
-        isDark ? const Color(0xFFE2CFFF) : const Color(0xFF4E3D61);
-    final Color taglineText =
-        isDark ? const Color(0xFFD5B6FF) : const Color(0xFF6F548A);
+    return AnnotatedRegion<SystemUiOverlayStyle>(
 
-    return Scaffold(
-      backgroundColor:
-          isDark ? const Color(0xFF05050B) : const Color(0xFFF8F5FC),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double w = constraints.maxWidth;
-          final double h = constraints.maxHeight;
+      value: SystemUiOverlayStyle.light.copyWith(
 
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              // ==================================================
-              // BACKGROUND
-              // ==================================================
+        statusBarColor: Colors.transparent,
 
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: RadialGradient(
-                    center: const Alignment(0.0, -0.02),
-                    radius: 1.0,
-                    colors: isDark
-                        ? const [
-                            Color(0xFF140629),
-                            Color(0xFF090611),
-                            Color(0xFF05050B),
-                          ]
-                        : const [
-                            Color(0xFFF0E6FF),
-                            Color(0xFFF8F5FC),
-                            Color(0xFFFFFFFF),
-                          ],
-                    stops: const [0.0, 0.50, 1.0],
-                  ),
-                ),
-              ),
+        statusBarIconBrightness: Brightness.light,
 
-              // ==================================================
-              // BACKGROUND CURVES
-              // ==================================================
+        systemNavigationBarColor: const Color(0xFF090414),
 
-              CustomPaint(
-                painter: BackgroundCurvePainter(isDark: isDark),
-              ),
+        systemNavigationBarIconBrightness: Brightness.light,
 
-              // ==================================================
-              // SUBTLE PARTICLES
-              // ==================================================
+      ),
 
-              CustomPaint(
-                painter: ParticlePainter(isDark: isDark),
-              ),
+      child: Scaffold(
 
-              // ==================================================
-              // TOP LEFT - MORE THAN MUSIC
-              // ==================================================
+        backgroundColor: const Color(0xFF090414),
 
-              Positioned(
-                left: w * 0.08,
-                top: h * 0.075,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        body: LayoutBuilder(
+
+          builder: (context, constraints) {
+
+            // Reference design canvas, tuned to the second screenshot (393 × 880).
+
+            const dw = 393.0;
+
+            const dh = 880.0;
+
+            final width = constraints.maxWidth;
+
+            final height = constraints.maxHeight;
+
+            final sx = width / dw;
+
+            final sy = height / dh;
+
+            // Scale all fixed design coordinates proportionally to available screen size.
+
+            // Fill the whole viewport. X and Y are scaled independently so
+
+            // nothing is letterboxed on taller phones.
+
+            return ClipRect(
+
+              child: SizedBox.expand(
+
+                child: Stack(
+
                   children: [
-                    Text(
-                      'M O R E\nT H A N\nM U S I C',
-                      style: TextStyle(
-                        color: softText,
-                        fontSize: w * 0.030,
-                        height: 1.75,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
 
-                    SizedBox(height: h * 0.012),
+                    const Positioned.fill(
 
-                    Container(
-                      width: w * 0.115,
-                      height: 2,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            Color(0xFFC45CFF),
-                            Color(0xFF7C3AED),
-                            Colors.transparent,
-                          ],
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF9B4DFF)
-                                .withValues(alpha: 0.55),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                      child: DecoratedBox(
 
-              // ==================================================
-              // MAIN LOGO / BRAND
-              // ==================================================
+                        decoration: BoxDecoration(
 
-              Positioned(
-                top: h * 0.285,
-                left: 0,
-                right: 0,
-                child: FadeTransition(
-                  opacity: _fadeAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Column(
-                      children: [
-                        // ==========================================
-                        // LOGO
-                        // ==========================================
+                          gradient: RadialGradient(
 
-                        Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Container(
-                              width: w * 0.47,
-                              height: w * 0.47,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: const Color(0xFF7C3AED)
-                                        .withValues(alpha: 0.26),
-                                    blurRadius: 70,
-                                    spreadRadius: 10,
-                                  ),
-                                  BoxShadow(
-                                    color: const Color(0xFFB84DFF)
-                                        .withValues(alpha: 0.13),
-                                    blurRadius: 35,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
-                              ),
-                            ),
+                            center: Alignment(0, -0.22),
 
-                            Image.asset(
-                              'assets/images/sonexa_logo.png',
-                              width: w * 0.37,
-                              height: w * 0.37,
-                              fit: BoxFit.contain,
-                            ),
-                          ],
-                        ),
+                            radius: 1.05,
 
-                        SizedBox(height: h * 0.023),
+                            colors: [
 
-                        // ==========================================
-                        // SONEXA
-                        // ==========================================
+                              Color(0xFF230C3C),
 
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Text(
-                            'SONEXA',
-                            style: TextStyle(
-                              color: primaryText,
-                              fontSize: w * 0.105,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: w * 0.013,
-                              height: 1,
-                            ),
-                          ),
-                        ),
+                              Color(0xFF10071E),
 
-                        SizedBox(height: h * 0.018),
+                              Color(0xFF070310),
 
-                        // ==========================================
-                        // FEEL EVERY BEAT
-                        // ==========================================
-
-                        Text(
-                          'Feel Every Beat',
-                          style: TextStyle(
-                            color: taglineText,
-                            fontSize: w * 0.035,
-                            fontWeight: FontWeight.w400,
-                            letterSpacing: w * 0.010,
-                          ),
-                        ),
-
-                        SizedBox(height: h * 0.025),
-
-                        // ==========================================
-                        // GLOW LINE
-                        // ==========================================
-
-                        Container(
-                          width: w * 0.28,
-                          height: 2,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [
-                                Colors.transparent,
-                                Color(0xFF6D28D9),
-                                Color(0xFFC084FC),
-                                Colors.white,
-                                Color(0xFFC084FC),
-                                Color(0xFF6D28D9),
-                                Colors.transparent,
-                              ],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFA855F7)
-                                    .withValues(alpha: 0.85),
-                                blurRadius: 10,
-                              ),
                             ],
+
+                            stops: [0, .53, 1],
+
                           ),
+
                         ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
 
-              // ==================================================
-              // MUSIC WAVE
-              // ==================================================
-
-              Positioned(
-                left: 0,
-                right: 0,
-                top: h * 0.605,
-                child: SizedBox(
-                  height: h * 0.13,
-                  child: CustomPaint(
-                    painter: MusicWavePainter(isDark: isDark),
-                  ),
-                ),
-              ),
-
-              // ==================================================
-              // PLAY • DISCOVER • ORGANIZE • ENJOY
-              // ==================================================
-
-              Positioned(
-                left: 0,
-                right: 0,
-                top: h * 0.715,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: w * 0.075,
-                  ),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SplashWord('PLAY'),
-                        SplashDot(),
-                        SplashWord('DISCOVER'),
-                        SplashDot(),
-                        SplashWord('ORGANIZE'),
-                        SplashDot(),
-                        SplashWord('ENJOY'),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // ==================================================
-              // BOTTOM RIGHT
-              // ==================================================
-
-              Positioned(
-                right: w * 0.08,
-                bottom: h * 0.075,
-                child: Transform.rotate(
-                  angle: -0.08,
-                  child: Column(
-                    children: [
-                      Text(
-                        'A Better\nYou',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: const Color(0xFFA855F7),
-                          fontSize: w * 0.052,
-                          height: 1.0,
-                          fontWeight: FontWeight.w300,
-                          fontStyle: FontStyle.italic,
-                        ),
                       ),
 
-                      SizedBox(height: h * 0.010),
+                    ),
 
-                      Container(
-                        width: w * 0.13,
-                        height: 1,
-                        color: const Color(0xFFA855F7),
+                    Transform(
+
+                      alignment: Alignment.topLeft,
+
+                      transform: Matrix4.diagonal3Values(sx, sy, 1),
+
+                      child: SizedBox(
+
+                        width: dw,
+
+                        height: dh,
+
+                        child: Stack(
+
+                          clipBehavior: Clip.none,
+
+                          children: [
+
+                            const Positioned.fill(
+
+                              child: CustomPaint(painter: _BackgroundPainter()),
+
+                            ),
+
+                            const Positioned(
+
+                              left: 29,
+
+                              top: 65,
+
+                              child: Text(
+
+                                'M O R E\nT H A N\nM U S I C',
+
+                                style: TextStyle(
+
+                                  color: Color(0xFFE8D4F7),
+
+                                  fontSize: 12,
+
+                                  height: 1.78,
+
+                                  letterSpacing: 1.05,
+
+                                ),
+
+                              ),
+
+                            ),
+
+                            const Positioned(
+
+                              left: 29,
+
+                              top: 132,
+
+                              child: _GlowLine(width: 48),
+
+                            ),
+
+                            const Positioned(
+
+                              left: 329,
+
+                              top: 183,
+
+                              child: _MusicNote(size: 35, doubleNote: false),
+
+                            ),
+
+                            const Positioned(
+
+                              left: 35,
+
+                              top: 350,
+
+                              child: _MusicNote(size: 40, doubleNote: true),
+
+                            ),
+
+                            const Positioned(
+
+                              left: 343,
+
+                              top: 606,
+
+                              child: _MusicNote(size: 42, doubleNote: true),
+
+                            ),
+
+                            Positioned(
+
+                              left: 0,
+
+                              top: 211,
+
+                              width: dw,
+
+                              child: FadeTransition(
+
+                                opacity: CurvedAnimation(
+
+                                  parent: _controller,
+
+                                  curve: Curves.easeOut,
+
+                                ),
+
+                                child: Column(
+
+                                  mainAxisSize: MainAxisSize.min,
+
+                                  children: [
+
+                                    Container(
+
+                                      width: 156,
+
+                                      height: 156,
+
+                                      alignment: Alignment.center,
+
+                                      decoration: BoxDecoration(
+
+                                        shape: BoxShape.circle,
+
+                                        boxShadow: [
+
+                                          BoxShadow(
+
+                                            color: const Color(0xFF932BFF)
+
+                                                .withValues(alpha: .20),
+
+                                            blurRadius: 42,
+
+                                            spreadRadius: 3,
+
+                                          ),
+
+                                        ],
+
+                                      ),
+
+                                      child: Image.asset(
+
+                                        'assets/images/sonexa_logo.png',
+
+                                        width: 150,
+
+                                        height: 150,
+
+                                        fit: BoxFit.contain,
+
+                                        errorBuilder: (_, error, stackTrace) =>
+
+                                            Container(
+
+                                              width: 148,
+
+                                              height: 148,
+
+                                              decoration: BoxDecoration(
+
+                                                borderRadius:
+
+                                                    BorderRadius.circular(34),
+
+                                                border: Border.all(
+
+                                                  color: const Color(
+
+                                                    0xFFD65DFF,
+
+                                                  ),
+
+                                                  width: 2,
+
+                                                ),
+
+                                                gradient: const LinearGradient(
+
+                                                  begin: Alignment.topLeft,
+
+                                                  end: Alignment.bottomRight,
+
+                                                  colors: [
+
+                                                    Color(0xFFCB60FF),
+
+                                                    Color(0xFF6E18DB),
+
+                                                    Color(0xFF16062E),
+
+                                                  ],
+
+                                                ),
+
+                                              ),
+
+                                              child: const Icon(
+
+                                                Icons.graphic_eq_rounded,
+
+                                                size: 83,
+
+                                                color: Colors.white,
+
+                                              ),
+
+                                            ),
+
+                                      ),
+
+                                    ),
+
+                                    const SizedBox(height: 14),
+
+                                    const Text.rich(
+
+                                      TextSpan(
+
+                                        children: [
+
+                                          TextSpan(
+
+                                            text: 'SONEX',
+
+                                            style: TextStyle(
+
+                                              color: Colors.white,
+
+                                            ),
+
+                                          ),
+
+                                          TextSpan(
+
+                                            text: 'A',
+
+                                            style: TextStyle(
+
+                                              color: Color(0xFFB85BFF),
+
+                                            ),
+
+                                          ),
+
+                                        ],
+
+                                      ),
+
+                                      textAlign: TextAlign.center,
+
+                                      style: TextStyle(
+
+                                        fontSize: 46,
+
+                                        fontWeight: FontWeight.w800,
+
+                                        height: 1,
+
+                                        letterSpacing: 1.0,
+
+                                      ),
+
+                                    ),
+
+                                    const SizedBox(height: 16),
+
+                                    const Text(
+
+                                      'F e e l  E v e r y  B e a t',
+
+                                      style: TextStyle(
+
+                                        fontSize: 11.7,
+
+                                        color: Color(0xFFF0DFFB),
+
+                                      ),
+
+                                    ),
+
+                                    const SizedBox(height: 18),
+
+                                    const _GlowLine(width: 99, height: 2.5),
+
+                                  ],
+
+                                ),
+
+                              ),
+
+                            ),
+
+                            // Four equally spaced, screen-centered feature icons.
+
+                            // Explicit coordinates avoid intrinsic-width shifts.
+
+                            const Positioned(
+
+                              left: 0,
+
+                              top: 493,
+
+                              width: dw,
+
+                              child: SizedBox(
+
+                                height: 83,
+
+                                child: Stack(
+
+                                  children: [
+
+                                    Positioned(
+
+                                      left: 28,
+
+                                      width: 68,
+
+                                      child: _Feature(
+
+                                        icon: Icons.play_arrow_rounded,
+
+                                        label: 'PLAY',
+
+                                      ),
+
+                                    ),
+
+                                    Positioned(
+
+                                      left: 118,
+
+                                      width: 68,
+
+                                      child: _Feature(
+
+                                        icon: Icons.search_rounded,
+
+                                        label: 'DISCOVER',
+
+                                      ),
+
+                                    ),
+
+                                    Positioned(
+
+                                      left: 208,
+
+                                      width: 68,
+
+                                      child: _Feature(
+
+                                        icon: Icons.queue_music_rounded,
+
+                                        label: 'ORGANIZE',
+
+                                      ),
+
+                                    ),
+
+                                    Positioned(
+
+                                      left: 298,
+
+                                      width: 68,
+
+                                      child: _Feature(
+
+                                        icon: Icons.favorite_rounded,
+
+                                        label: 'ENJOY',
+
+                                      ),
+
+                                    ),
+
+                                    Positioned(
+
+                                      left: 106,
+
+                                      top: 2,
+
+                                      child: _FeatureDivider(),
+
+                                    ),
+
+                                    Positioned(
+
+                                      left: 196,
+
+                                      top: 2,
+
+                                      child: _FeatureDivider(),
+
+                                    ),
+
+                                    Positioned(
+
+                                      left: 286,
+
+                                      top: 2,
+
+                                      child: _FeatureDivider(),
+
+                                    ),
+
+                                  ],
+
+                                ),
+
+                              ),
+
+                            ),
+
+                            const Positioned(
+
+                              left: 0,
+
+                              top: 627,
+
+                              width: dw,
+
+                              child: Column(
+
+                                children: [
+
+                                  Text.rich(
+
+                                    TextSpan(
+
+                                      children: [
+
+                                        TextSpan(text: 'A Better You\n'),
+
+                                        TextSpan(
+
+                                          text: 'Through ',
+
+                                          style: TextStyle(
+
+                                            fontStyle: FontStyle.italic,
+
+                                          ),
+
+                                        ),
+
+                                        TextSpan(
+
+                                          text: 'Music',
+
+                                          style: TextStyle(
+
+                                            fontStyle: FontStyle.italic,
+
+                                            color: Color(0xFFCB6AFF),
+
+                                          ),
+
+                                        ),
+
+                                      ],
+
+                                    ),
+
+                                    textAlign: TextAlign.center,
+
+                                    style: TextStyle(
+
+                                      color: Colors.white,
+
+                                      fontSize: 18,
+
+                                      fontWeight: FontWeight.w700,
+
+                                      height: 1.18,
+
+                                    ),
+
+                                  ),
+
+                                  SizedBox(height: 13),
+
+                                  _GlowLine(width: 69, height: 2),
+
+                                ],
+
+                              ),
+
+                            ),
+
+                          ],
+
+                        ),
+
                       ),
-                    ],
-                  ),
+
+                    ),
+
+                  ],
+
                 ),
+
               ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
 
-// ============================================================
-// SMALL TEXT
-// ============================================================
+            );
 
-class SplashWord extends StatelessWidget {
-  final String text;
+          },
 
-  const SplashWord(
-    this.text, {
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? const Color(0xFFE4D1FF)
-            : const Color(0xFF4E3D61),
-        fontSize: 10,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 2.5,
-      ),
-    );
-  }
-}
-
-class SplashDot extends StatelessWidget {
-  const SplashDot({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: 12,
-      ),
-      child: Text(
-        '•',
-        style: TextStyle(
-          color: Color(0xFFA855F7),
-          fontSize: 15,
-          fontWeight: FontWeight.bold,
         ),
+
       ),
+
     );
+
   }
+
 }
 
-// ============================================================
-// BACKGROUND CURVES
-// ============================================================
+class _GlowLine extends StatelessWidget {
 
-class BackgroundCurvePainter extends CustomPainter {
-  final bool isDark;
+  const _GlowLine({required this.width, this.height = 2.5});
 
-  const BackgroundCurvePainter({
-    required this.isDark,
-  });
+  final double width;
+
+  final double height;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    // ==========================================================
-    // TOP RIGHT LARGE PLANET
-    // ==========================================================
 
-    final Rect topRect = Rect.fromCircle(
-      center: Offset(
-        size.width * 1.02,
-        size.height * -0.045,
+  Widget build(BuildContext context) => Container(
+
+    width: width,
+
+    height: height,
+
+    decoration: BoxDecoration(
+
+      gradient: const LinearGradient(
+
+        colors: [
+
+          Colors.transparent,
+
+          Color(0xFF8B24FF),
+
+          Color(0xFFECA6FF),
+
+          Color(0xFF8B24FF),
+
+          Colors.transparent,
+
+        ],
+
       ),
-      radius: size.width * 0.43,
-    );
 
-    final Paint topGlow = Paint()
-      ..color = const Color(0xFF7C3AED)
-          .withValues(alpha: 0.16)
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        28,
-      );
+      boxShadow: [
 
-    canvas.drawCircle(
-      topRect.center,
-      topRect.width / 2,
-      topGlow,
-    );
+        BoxShadow(
 
-    final Paint topPlanet = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(-0.8, 0.8),
-        radius: 1.1,
-        colors: isDark
-            ? const [
-                Color(0xFF5B21B6),
-                Color(0xFF25085A),
-                Color(0xFF0B0616),
-              ]
-            : const [
-                Color(0xFFC7A5FF),
-                Color(0xFFE7D8FF),
-                Color(0xFFF8F3FF),
-              ],
-        stops: const [0.0, 0.55, 1.0],
-      ).createShader(topRect);
+          color: const Color(0xFFB449FF).withValues(alpha: .8),
 
-    canvas.drawCircle(
-      topRect.center,
-      topRect.width / 2,
-      topPlanet,
-    );
+          blurRadius: 11,
 
-    final Paint topEdgeGlow = Paint()
-      ..color = const Color(0xFF9B4DFF)
-          .withValues(alpha: 0.35)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        9,
-      );
+        ),
 
-    canvas.drawArc(
-      topRect,
-      math.pi * 0.42,
-      math.pi * 0.92,
-      false,
-      topEdgeGlow,
-    );
+      ],
 
-    final Paint topEdge = Paint()
-      ..color = const Color(0xFFB66CFF)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4;
+    ),
 
-    canvas.drawArc(
-      topRect,
-      math.pi * 0.42,
-      math.pi * 0.92,
-      false,
-      topEdge,
-    );
+  );
 
-    // ==========================================================
-    // BOTTOM LEFT LARGE PLANET
-    // ==========================================================
-
-    final Rect bottomRect = Rect.fromCircle(
-      center: Offset(
-        -size.width * 0.14,
-        size.height * 1.03,
-      ),
-      radius: size.width * 0.58,
-    );
-
-    final Paint bottomGlow = Paint()
-      ..color = const Color(0xFF6D28D9)
-          .withValues(alpha: 0.14)
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        30,
-      );
-
-    canvas.drawCircle(
-      bottomRect.center,
-      bottomRect.width / 2,
-      bottomGlow,
-    );
-
-    final Paint bottomPlanet = Paint()
-      ..shader = RadialGradient(
-        center: const Alignment(0.8, -0.7),
-        radius: 1.15,
-        colors: isDark
-            ? const [
-                Color(0xFF3B0B84),
-                Color(0xFF1D063E),
-                Color(0xFF08050F),
-              ]
-            : const [
-                Color(0xFFD6BCFF),
-                Color(0xFFEBDDFF),
-                Color(0xFFFBF8FF),
-              ],
-        stops: const [0.0, 0.60, 1.0],
-      ).createShader(bottomRect);
-
-    canvas.drawCircle(
-      bottomRect.center,
-      bottomRect.width / 2,
-      bottomPlanet,
-    );
-
-    final Paint bottomEdgeGlow = Paint()
-      ..color = const Color(0xFF7C3AED)
-          .withValues(alpha: 0.30)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 7
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        10,
-      );
-
-    canvas.drawArc(
-      bottomRect,
-      math.pi * 1.30,
-      math.pi * 0.70,
-      false,
-      bottomEdgeGlow,
-    );
-
-    final Paint bottomEdge = Paint()
-      ..color = const Color(0xFF8B5CF6)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.3;
-
-    canvas.drawArc(
-      bottomRect,
-      math.pi * 1.30,
-      math.pi * 0.70,
-      false,
-      bottomEdge,
-    );
-  }
-
-  @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
-  }
 }
 
-// ============================================================
-// PARTICLES
-// ============================================================
+class _MusicNote extends StatelessWidget {
 
-class ParticlePainter extends CustomPainter {
-  final bool isDark;
+  const _MusicNote({required this.size, required this.doubleNote});
 
-  const ParticlePainter({
-    required this.isDark,
-  });
+  final double size;
+
+  final bool doubleNote;
 
   @override
+
+  Widget build(BuildContext context) => Icon(
+
+    doubleNote ? Icons.music_note_rounded : Icons.music_note_rounded,
+
+    size: size,
+
+    color: const Color(0xFFAB4BFF),
+
+    shadows: [
+
+      Shadow(
+
+        color: const Color(0xFFAB4BFF).withValues(alpha: .8),
+
+        blurRadius: 13,
+
+      ),
+
+    ],
+
+  );
+
+}
+
+class _Feature extends StatelessWidget {
+
+  const _Feature({required this.icon, required this.label});
+
+  final IconData icon;
+
+  final String label;
+
+  @override
+
+  Widget build(BuildContext context) => SizedBox(
+
+    width: double.infinity,
+
+    child: Column(
+
+      mainAxisSize: MainAxisSize.min,
+
+      children: [
+
+        Container(
+
+          width: 49,
+
+          height: 49,
+
+          decoration: BoxDecoration(
+
+            shape: BoxShape.circle,
+
+            gradient: const LinearGradient(
+
+              begin: Alignment.topLeft,
+
+              end: Alignment.bottomRight,
+
+              colors: [Color(0xFF381454), Color(0xFF1B0B32), Color(0xFF0C0518)],
+
+            ),
+
+            border: Border.all(color: const Color(0xFF573078), width: .8),
+
+          ),
+
+          child: Icon(icon, color: const Color(0xFFDDA0FF), size: 27),
+
+        ),
+
+        const SizedBox(height: 9),
+
+        Text(
+
+          label,
+
+          maxLines: 1,
+
+          style: const TextStyle(
+
+            fontSize: 9.6,
+
+            fontWeight: FontWeight.w600,
+
+            letterSpacing: .2,
+
+            color: Color(0xFFE8D6F9),
+
+          ),
+
+        ),
+
+      ],
+
+    ),
+
+  );
+
+}
+
+class _FeatureDivider extends StatelessWidget {
+
+  const _FeatureDivider();
+
+  @override
+
+  Widget build(BuildContext context) => Container(
+
+    width: 1,
+
+    height: 53,
+
+    margin: const EdgeInsets.only(bottom: 13),
+
+    color: const Color(0xFF74428F),
+
+  );
+
+}
+
+class _BackgroundPainter extends CustomPainter {
+
+  const _BackgroundPainter();
+
+  @override
+
   void paint(Canvas canvas, Size size) {
-    final Paint glowPaint = Paint()
-      ..color = const Color(0xFF8B5CF6)
-          .withValues(alpha: isDark ? 0.45 : 0.32)
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        5,
-      );
 
-    final Paint dotPaint = Paint()
-      ..color = const Color(0xFF8B5CF6)
-          .withValues(alpha: isDark ? 0.70 : 0.62);
+    const w = 393.0;
 
-    final List<Offset> dots = [
-      Offset(size.width * 0.81, size.height * 0.17),
-      Offset(size.width * 0.91, size.height * 0.20),
-      Offset(size.width * 0.94, size.height * 0.23),
+    const h = 880.0;
 
-      Offset(size.width * 0.20, size.height * 0.61),
-      Offset(size.width * 0.24, size.height * 0.64),
+    // Upper-right circular glow.
 
-      Offset(size.width * 0.83, size.height * 0.62),
-      Offset(size.width * 0.88, size.height * 0.65),
+    const topCenter = Offset(407, -52);
 
-      Offset(size.width * 0.24, size.height * 0.78),
-      Offset(size.width * 0.34, size.height * 0.82),
-      Offset(size.width * 0.42, size.height * 0.87),
+    const topRadius = 167.0;
 
-      Offset(size.width * 0.49, size.height * 0.91),
-      Offset(size.width * 0.58, size.height * 0.94),
+    final topRect = Rect.fromCircle(center: topCenter, radius: topRadius);
+
+    canvas.drawCircle(
+
+      topCenter,
+
+      topRadius,
+
+      Paint()
+
+        ..shader = const RadialGradient(
+
+          center: Alignment(-.6, .7),
+
+          radius: 1.3,
+
+          colors: [Color(0xFF7523D9), Color(0xFF46138C), Color(0xFF19072E)],
+
+        ).createShader(topRect),
+
+    );
+
+    canvas.drawCircle(
+
+      topCenter,
+
+      topRadius,
+
+      Paint()
+
+        ..color = const Color(0xFFAF5CFF)
+
+        ..style = PaintingStyle.stroke
+
+        ..strokeWidth = 1.3,
+
+    );
+
+    const dots = <Offset>[
+
+      Offset(300, 149),
+
+      Offset(353, 192),
+
+      Offset(29, 247),
+
+      Offset(63, 282),
+
+      Offset(40, 465),
+
+      Offset(354, 440),
+
+      Offset(336, 475),
+
+      Offset(323, 631),
+
+      Offset(30, 843),
+
+      Offset(69, 836),
+
     ];
 
-    for (int i = 0; i < dots.length; i++) {
-      final double radius =
-          i % 3 == 0 ? 2.5 : 1.5;
+    for (var i = 0; i < dots.length; i++) {
+
+      final r = i % 3 == 0 ? 3.7 : 2.1;
 
       canvas.drawCircle(
+
         dots[i],
-        radius + 2,
-        glowPaint,
+
+        r + 3,
+
+        Paint()
+
+          ..color = const Color(0xFF9C43FF).withValues(alpha: .30)
+
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+
       );
 
-      canvas.drawCircle(
-        dots[i],
-        radius,
-        dotPaint,
-      );
+      canvas.drawCircle(dots[i], r, Paint()..color = const Color(0xFF9542F4));
+
     }
-  }
 
-  @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
-  }
-}
+    // The large left orb must stay mostly offscreen, like the reference.
 
-// ============================================================
-// PREMIUM MUSIC WAVE
-// ============================================================
+    const orbCenter = Offset(-114, 890);
 
-class MusicWavePainter extends CustomPainter {
-  final bool isDark;
+    const orbRadius = 246.0;
 
-  const MusicWavePainter({
-    required this.isDark,
-  });
+    final orbRect = Rect.fromCircle(center: orbCenter, radius: orbRadius);
 
-  @override
-  void paint(Canvas canvas, Size size) {
-    final double centerY =
-        size.height * 0.50;
+    canvas.drawCircle(
 
-    // ==========================================================
-    // MULTIPLE THIN WAVES
-    // ==========================================================
+      orbCenter,
 
-    for (int i = 0; i < 12; i++) {
-      final Path path = Path();
+      orbRadius,
 
-      for (
-        double x = -10;
-        x <= size.width + 10;
-        x += 2
-      ) {
-        final double progress =
-            x / size.width;
+      Paint()
 
-        final double amplitude =
-            size.height *
-            (0.17 + (i * 0.003));
+        ..shader = const RadialGradient(
 
-        final double phase =
-            (i - 6) * 0.055;
+          center: Alignment(.65, -.7),
 
-        final double y =
-            centerY +
-            ((i - 6) * 1.7) +
-            math.sin(
-                  progress * math.pi * 3.0 +
-                      phase,
-                ) *
-                amplitude;
+          radius: 1.3,
 
-        if (x <= -9) {
-          path.moveTo(x, y);
-        } else {
-          path.lineTo(x, y);
-        }
-      }
+          colors: [Color(0xFF8426EA), Color(0xFF5115A6), Color(0xFF1C083B)],
 
-      final Paint thinPaint = Paint()
-        ..color = const Color(0xFF7C3AED)
-            .withValues(
-          alpha: (isDark ? 0.12 : 0.18) + i * 0.012,
-        )
+        ).createShader(orbRect),
+
+    );
+
+    canvas.drawCircle(
+
+      orbCenter,
+
+      orbRadius,
+
+      Paint()
+
+        ..color = const Color(0xFFAF60FF)
+
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 0.7;
+
+        ..strokeWidth = 1.3,
+
+    );
+
+    // Reference: wave crests at edges and a smooth deep valley at center.
+
+    Path crest(double dy) => Path()
+
+      ..moveTo(-12, 707 + dy)
+
+      ..cubicTo(64, 719 + dy, 134, 779 + dy, 198, 772 + dy)
+
+      ..cubicTo(263, 768 + dy, 328, 688 + dy, 407, 715 + dy);
+
+    // Dark translucent body below the crest.
+
+    final base = crest(18)
+
+      ..lineTo(407, h + 5)
+
+      ..lineTo(-12, h + 5)
+
+      ..close();
+
+    canvas.drawPath(
+
+      base,
+
+      Paint()
+
+        ..shader = const LinearGradient(
+
+          begin: Alignment.topCenter,
+
+          end: Alignment.bottomCenter,
+
+          colors: [Color(0xBB3B0D86), Color(0x99200A50), Color(0xFF0B041A)],
+
+        ).createShader(const Rect.fromLTWH(0, 704, w, 176)),
+
+    );
+
+    // Semi-transparent flowing silk that crosses the orb.
+
+    final silk = Path()
+
+      ..moveTo(-12, 759)
+
+      ..cubicTo(74, 689, 137, 800, 202, 800)
+
+      ..cubicTo(285, 799, 340, 704, 407, 746)
+
+      ..lineTo(407, 811)
+
+      ..cubicTo(327, 771, 276, 847, 199, 838)
+
+      ..cubicTo(111, 832, 60, 743, -12, 820)
+
+      ..close();
+
+    canvas.drawPath(
+
+      silk,
+
+      Paint()
+
+        ..shader = const LinearGradient(
+
+          begin: Alignment.topCenter,
+
+          end: Alignment.bottomCenter,
+
+          colors: [Color(0xBB8E35F9), Color(0x884E18AE), Color(0x00250A55)],
+
+        ).createShader(const Rect.fromLTWH(0, 694, w, 181)),
+
+    );
+
+    // Many fine, transparent parallel threads instead of thick stripes.
+
+    for (int i = 19; i >= 0; i--) {
 
       canvas.drawPath(
-        path,
-        thinPaint,
-      );
-    }
 
-    // ==========================================================
-    // MAIN WAVE
-    // ==========================================================
+        crest(i * 2.0),
 
-    final Path mainPath = Path();
+        Paint()
 
-    for (
-      double x = -10;
-      x <= size.width + 10;
-      x += 2
-    ) {
-      final double progress =
-          x / size.width;
+          ..color = const Color(0xFFC16AFF).withValues(alpha: .16 - i * .005)
 
-      final double y =
-          centerY +
-          math.sin(
-                progress * math.pi * 3.0,
-              ) *
-              (size.height * 0.20);
+          ..style = PaintingStyle.stroke
 
-      if (x <= -9) {
-        mainPath.moveTo(x, y);
-      } else {
-        mainPath.lineTo(x, y);
-      }
-    }
+          ..strokeWidth = .65,
 
-    // ==========================================================
-    // GLOW
-    // ==========================================================
-
-    final Paint glowPaint = Paint()
-      ..color = const Color(0xFF9B4DFF)
-          .withValues(alpha: 0.42)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 8
-      ..maskFilter = const MaskFilter.blur(
-        BlurStyle.normal,
-        12,
       );
 
-    canvas.drawPath(
-      mainPath,
-      glowPaint,
-    );
-
-    // ==========================================================
-    // BRIGHT MAIN LINE
-    // ==========================================================
-
-    final Paint mainPaint = Paint()
-      ..shader = LinearGradient(
-        colors: isDark
-            ? const [
-                Color(0xFF7C3AED),
-                Color(0xFFA855F7),
-                Color(0xFFE9D5FF),
-                Colors.white,
-                Color(0xFFB66CFF),
-                Color(0xFF7C3AED),
-              ]
-            : const [
-                Color(0xFF6D28D9),
-                Color(0xFF9333EA),
-                Color(0xFF7C3AED),
-                Color(0xFF5B21B6),
-                Color(0xFF9333EA),
-                Color(0xFF6D28D9),
-              ],
-      ).createShader(
-        Rect.fromLTWH(
-          0,
-          0,
-          size.width,
-          size.height,
-        ),
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round;
+    }
 
     canvas.drawPath(
-      mainPath,
-      mainPaint,
+
+      crest(0),
+
+      Paint()
+
+        ..color = const Color(0xFFB54AFF).withValues(alpha: .75)
+
+        ..style = PaintingStyle.stroke
+
+        ..strokeWidth = 11
+
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 14),
+
     );
+
+    canvas.drawPath(
+
+      crest(0),
+
+      Paint()
+
+        ..shader = const LinearGradient(
+
+          colors: [Color(0xFFB04AFF), Color(0xFFE9AAFF), Color(0xFF9231FF)],
+
+        ).createShader(const Rect.fromLTWH(0, 694, w, 146))
+
+        ..style = PaintingStyle.stroke
+
+        ..strokeWidth = 2.2
+
+        ..strokeCap = StrokeCap.round,
+
+    );
+
+    final lowerFold = Path()
+
+      ..moveTo(-12, 811)
+
+      ..cubicTo(74, 763, 136, 847, 200, 844)
+
+      ..cubicTo(279, 844, 344, 786, 407, 813)
+
+      ..lineTo(407, h + 5)
+
+      ..lineTo(-12, h + 5)
+
+      ..close();
+
+    canvas.drawPath(
+
+      lowerFold,
+
+      Paint()
+
+        ..shader = const LinearGradient(
+
+          begin: Alignment.topCenter,
+
+          end: Alignment.bottomCenter,
+
+          colors: [Color(0x66451A98), Color(0x00100625)],
+
+        ).createShader(const Rect.fromLTWH(0, 774, w, 106)),
+
+    );
+
   }
 
   @override
-  bool shouldRepaint(
-    covariant CustomPainter oldDelegate,
-  ) {
-    return false;
-  }
+
+  bool shouldRepaint(covariant _BackgroundPainter oldDelegate) => false;
+
 }

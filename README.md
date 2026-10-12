@@ -1,111 +1,116 @@
 <div align="center">
 
-<img src="assets/images/sonexa_logo.png" width="110" alt="SONEXA logo">
+<img src="assets/images/sonexa_logo.png" width="110" alt="SONEXA Logo" />
 
 # SONEXA
 
-### Feel Every Beat
+### Feel Every Beat 🎵
 
-A modern Flutter music player with online music discovery, persistent collections, lyrics, queue controls, and a polished dark interface.
+**A Flutter-powered Android music experience featuring music discovery, playback, personal collections, lyrics, queue controls, and customizable sound.**
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.47.1-02569B?logo=flutter)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.13.1-0175C2?logo=dart)](https://dart.dev/)
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?logo=android)
-![Version](https://img.shields.io/badge/Version-1.0.0-9B6BFF)
+![Version](https://img.shields.io/badge/Version-1.0.0-913CFF)
 
 </div>
 
 ---
 
-## About
+## About SONEXA
 
-SONEXA is a portfolio-level Android music player built with Flutter and Dart. It combines local playback with online catalogue discovery through multiple music APIs and provides a complete listening flow across Home, Search, Library, Playback, Queue, Lyrics, and Settings.
+**SONEXA** is an Android music-player portfolio project developed using **Flutter and Dart**. It brings together a responsive interface, online music discovery, playback controls, saved music collections, lyrics lookup, an audio equalizer, and app settings.
 
-The project demonstrates responsive Flutter UI development, audio playback, REST API integration, persistent local state, reusable widgets, collection-based navigation, and release build preparation.
+The project demonstrates Flutter UI development, navigation, REST API integration, audio playback, local persistence, state management, and Android release builds.
 
-## App Preview
+## App Screenshots
 
-<p align="center">
-  <img src="screenshots/01-splash.png" width="185" alt="SONEXA Splash">
-  <img src="screenshots/02-login.png" width="185" alt="SONEXA Login">
-  <img src="screenshots/03-home.png" width="185" alt="SONEXA Home">
-  <img src="screenshots/04-search.png" width="185" alt="SONEXA Search">
-</p>
+<div align="center">
 
-<p align="center">
-  <sub>Splash&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Login&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Home&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Search</sub>
-</p>
+### Welcome & Authentication
 
-<p align="center">
-  <img src="screenshots/05-library.png" width="185" alt="SONEXA Library">
-  <img src="screenshots/06-playback.png" width="185" alt="SONEXA Playback">
-  <img src="screenshots/07-lyrics.png" width="185" alt="SONEXA Lyrics">
-  <img src="screenshots/08-settings.png" width="185" alt="SONEXA Settings">
-</p>
+<img src="screenshots/01_splash.png" width="185" alt="Splash Screen" />
+<img src="screenshots/02_login.png" width="185" alt="Login Screen" />
+<img src="screenshots/03_signup.png" width="185" alt="Signup Screen" />
 
-<p align="center">
-  <sub>Library&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Playback&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Lyrics&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Settings</sub>
-</p>
+*Splash • Login • Signup*
+
+### Discover Your Music
+
+<img src="screenshots/04_home.png" width="185" alt="Home Screen" />
+<img src="screenshots/05_search.png" width="185" alt="Search Screen" />
+<img src="screenshots/06_library.png" width="185" alt="Library Screen" />
+
+*Home • Search • Library*
+
+### Listening & Personalization
+
+<img src="screenshots/07_playback.png" width="185" alt="Playback Screen" />
+<img src="screenshots/08_lyrics.png" width="185" alt="Lyrics Screen" />
+<img src="screenshots/09_equalizer.png" width="185" alt="Equalizer Screen" />
+<img src="screenshots/10_settings.png" width="185" alt="Settings Screen" />
+
+*Playback • Lyrics • Equalizer • Settings*
+
+</div>
 
 ---
 
 ## Key Features
 
-### Music discovery
+### Music Discovery
 
-- Dynamic song catalogues from iTunes, Jamendo, and Audius
-- Search by song, artist, album, and category
-- Curated Home sections including Quick Access, Continue Listening, Made For You, and Trending
-- Network artwork loading with graceful fallbacks
-- Preview and full-track source indicators
+- Music discovery using iTunes, Jamendo, and Audius integrations
+- Song, artist, and album search
+- Home sections for discovery and listening
+- Online artwork with fallback images
+- Preview/full-track availability depending on the source
 
-### Playback experience
+### Music Playback
 
-- Play, pause, next, previous, seek, shuffle, and repeat controls
-- Full Playback screen with artwork and track information
-- Persistent global mini player
-- Collection-aware playback from albums, artists, playlists, and queue
-- Queue management with immediate track switching
-- Equalizer interface with persisted preferences
+- Play, pause, skip, seek, shuffle, and repeat controls
+- Dedicated playback screen with album artwork and track details
+- Persistent mini player
+- Queue-based listening and track switching
+- Audio equalizer with presets and adjustable frequency bands on supported Android devices
 
-### Personal library
+### Personal Library
 
 - Liked Songs and Recently Played
-- User-created playlists with add/remove song controls
+- User-created playlists
 - Saved albums and artists
-- Songs, Albums, Artists, and Playlists filters
-- Album and artist collections with grouped tracks
-- Persistent library data across app restarts
+- Library collections with persistent local preferences
 
-### Lyrics and appearance
+### Lyrics & Customization
 
-- Online lyrics lookup through LRCLIB
-- Local lyrics fallback support
-- Dark, Light, and System theme modes
-- Persistent settings
-- Responsive layouts with fixed navigation and mini-player positioning
+- Online lyrics lookup using LRCLIB with local lyric fallback
+- Dark, Light, and System appearance modes
+- Local settings persistence
+- Audio quality preferences and optional biometric app lock on supported devices
 
-## APIs and Services
+## APIs & Services
 
 | Service | Purpose |
 |---|---|
-| iTunes Search API | Music discovery, metadata, artwork, and previews |
-| Jamendo API | Full-track catalogue integration |
+| iTunes Search API | Music metadata, artwork, and preview discovery |
+| Jamendo API | Music catalogue integration where available |
 | Audius API | Additional online music discovery |
 | LRCLIB | Online lyrics lookup |
-| SharedPreferences | Local persistence for library and settings |
+| SharedPreferences | On-device preferences and collection storage |
+
+> **Note:** Track availability, playback length, and artwork depend on the music provider. Selecting an audio-quality preference does not guarantee that a streaming provider will supply a different bitrate.
 
 ## Tech Stack
 
-| Technology | Usage |
+| Technology | Use |
 |---|---|
-| Flutter | Android application UI and architecture |
+| Flutter | Cross-platform UI framework (Android target) |
 | Dart | Application logic |
-| just_audio | Local and network audio playback |
-| audio_service | Audio service foundation |
-| http | REST API requests |
-| SharedPreferences | Persistent local state |
-| Material Design | Components, navigation, and theming |
+| just_audio | Audio playback |
+| audio_service | Audio-service integration |
+| HTTP / REST APIs | Online catalogue and lyrics requests |
+| SharedPreferences | Persistent local settings and data |
+| Material Design | Theming, layout, and navigation |
 
 ## Project Structure
 
@@ -125,27 +130,37 @@ SONEXA/
 │   ├── widgets/
 │   └── main.dart
 ├── screenshots/
+│   ├── 01_splash.png
+│   ├── 02_login.png
+│   ├── 03_signup.png
+│   ├── 04_home.png
+│   ├── 05_search.png
+│   ├── 06_library.png
+│   ├── 07_playback.png
+│   ├── 08_lyrics.png
+│   ├── 09_equalizer.png
+│   └── 10_settings.png
 ├── pubspec.yaml
 └── README.md
 ```
 
 ## Getting Started
 
-### Prerequisites
+### Requirements
 
-- Flutter SDK 3.47.1 or compatible
-- Dart SDK 3.13.1 or compatible
+- Flutter SDK compatible with the project (developed with Flutter 3.47.1)
+- Dart SDK compatible with the project (developed with Dart 3.13.1)
 - Android SDK
-- Android Studio or Visual Studio Code
+- VS Code or Android Studio
 - Android device or emulator
 
-Verify your environment:
+Check your setup:
 
 ```bash
 flutter doctor
 ```
 
-### Installation
+### Clone & Run
 
 ```bash
 git clone https://github.com/utsavsingh1920/SONEXA.git
@@ -154,39 +169,62 @@ flutter pub get
 flutter run
 ```
 
-### Local audio setup
+### Local Audio & API Setup
 
-Copyrighted demo audio is intentionally excluded from this public repository. To run the bundled local catalogue, add your own legally licensed audio files under `assets/audio/` and update the paths in `pubspec.yaml` and `lib/data/songs_data.dart`.
+The public repository may not include copyrighted demonstration audio. For local playback, use audio that you have permission to distribute, place it in the required project asset paths, and update the relevant references in `pubspec.yaml` and the local song catalogue if needed.
 
-Online catalogue features require an internet connection. API availability and preview/full-track access depend on the respective providers.
+Online features require an internet connection; API credentials or configuration may be needed for some providers. Never commit private keys or credentials to the repository.
 
-## Release Status
+## Android Release Build
 
-- Version: **1.0.0**
-- Android ARM64 release build tested on a physical device
-- Flutter analysis completed without issues
-- Core navigation, playback, APIs, persistence, queue, and lyrics verified
-- Public APK distribution is withheld because demonstration media is not included in the repository
+Generate an ARM64 APK for modern Android phones:
 
-## Roadmap
+```bash
+flutter build apk --release --target-platform android-arm64
+```
 
-- Replace local demonstration tracks with royalty-free audio
-- Improve background and lock-screen playback
-- Add headset and Bluetooth media controls
-- Introduce automated widget and integration tests
-- Improve caching and offline catalogue support
+Output:
+
+```text
+build/app/outputs/flutter-apk/app-release.apk
+```
+
+Or generate architecture-specific APKs:
+
+```bash
+flutter build apk --release --split-per-abi
+```
+
+The **arm64-v8a** output is suitable for devices such as the OnePlus 11R. APK size depends on bundled audio, images, other assets, and dependencies.
+
+## Current Status & Limitations
+
+- **Version:** 1.0.0
+- An Android release APK has been built successfully
+- Some features depend on third-party APIs and device capabilities
+- Lyrics timing synchronization depends on whether synchronized lyrics and playback timing data are available
+- The prototype uses on-device storage for some account, library, and feedback flows; it is not a production authentication or cloud-sync system
+- Music rights and provider terms must be checked before distributing an APK containing media
+
+## Future Improvements
+
+- Licensed or royalty-free music for publicly distributable builds
+- Better background playback and media controls
+- Offline caching where permitted
+- Automated widget and integration tests
+- Further APK size optimization
 
 ## Developer
 
 **Utsav Singh**  
 B.Sc. Information Technology Graduate  
-Flutter and Full-Stack Development Enthusiast
+Flutter Developer
 
-- GitHub: [@utsavsingh1920](https://github.com/utsavsingh1920)
+GitHub: [@utsavsingh1920](https://github.com/utsavsingh1920)
 
 ## Disclaimer
 
-SONEXA is an educational and portfolio project. Music, artist names, album artwork, trademarks, and other third-party media remain the property of their respective owners. SONEXA is not affiliated with or endorsed by any music streaming service, record label, or API provider.
+SONEXA is an educational and portfolio project. Third-party music, artwork, names, and trademarks belong to their respective owners. SONEXA is not affiliated with or endorsed by music platforms or record labels mentioned above.
 
 ---
 
