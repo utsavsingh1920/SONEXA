@@ -37,17 +37,13 @@ import 'security_screen.dart';
 import 'subscription_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
-
   const SettingsScreen({super.key});
 
   @override
-
   State<SettingsScreen> createState() => _SettingsScreenState();
-
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-
   // ===========================================================================
 
   // SETTINGS VALUES
@@ -97,33 +93,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   @override
-
   void initState() {
-
     super.initState();
 
     _themeController.addListener(_onThemeChanged);
 
     _loadSettings();
-
   }
 
   @override
-
   void dispose() {
-
     _themeController.removeListener(_onThemeChanged);
 
     super.dispose();
-
   }
 
   void _onThemeChanged() {
-
     if (!mounted) return;
 
     setState(() {});
-
   }
 
   // ===========================================================================
@@ -133,63 +121,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   Future<void> _loadSettings() async {
-
-    final SharedPreferences prefs =
-
-        await SharedPreferences.getInstance();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     await prefs.reload();
 
     if (!mounted) return;
 
     setState(() {
+      _autoplay = prefs.getBool('settings_autoplay') ?? true;
 
-      _autoplay =
+      _notifications = prefs.getBool('settings_notifications') ?? true;
 
-          prefs.getBool('settings_autoplay') ?? true;
+      _dataSaver = prefs.getBool('settings_data_saver') ?? false;
 
-      _notifications =
+      _audioQuality = prefs.getString('settings_audio_quality') ?? 'Normal';
 
-          prefs.getBool('settings_notifications') ?? true;
+      _language = prefs.getString('settings_language') ?? 'English';
 
-      _dataSaver =
-
-          prefs.getBool('settings_data_saver') ?? false;
-
-      _audioQuality =
-
-          prefs.getString('settings_audio_quality') ?? 'Normal';
-
-      _language =
-
-          prefs.getString('settings_language') ?? 'English';
-
-      _equalizer =
-
-          prefs.getString('settings_equalizer') ?? 'Flat';
+      _equalizer = prefs.getString('settings_equalizer') ?? 'Flat';
 
       _lyricsMode =
-
-          prefs.getString('settings_lyrics') ??
-
-              'Show lyrics automatically';
+          prefs.getString('settings_lyrics') ?? 'Show lyrics automatically';
 
       // Account
 
       _accountName =
+          prefs.getString('account_name') ??
+          prefs.getString('sonexa_profile_name') ??
+          'SONEXA User';
 
-          prefs.getString('account_name') ?? prefs.getString('sonexa_profile_name') ?? 'SONEXA User';
+      _accountEmail = prefs.getString('account_email') ?? 'user@example.com';
 
-      _accountEmail =
-
-          prefs.getString('account_email') ?? 'user@example.com';
-
-      _accountPhoto =
-
-          prefs.getString('account_photo');
-
+      _accountPhoto = prefs.getString('account_photo');
     });
-
   }
 
   // ===========================================================================
@@ -198,26 +162,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ===========================================================================
 
-  Future<void> _setBool(
+  Future<void> _setBool(String key, bool value) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    String key,
-
-    bool value,
-
-  ) async {
-
-    final SharedPreferences prefs =
-
-        await SharedPreferences.getInstance();
-
-    await prefs.setBool(
-
-      key,
-
-      value,
-
-    );
-
+    await prefs.setBool(key, value);
   }
 
   // ===========================================================================
@@ -226,26 +174,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ===========================================================================
 
-  Future<void> _setString(
+  Future<void> _setString(String key, String value) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    String key,
-
-    String value,
-
-  ) async {
-
-    final SharedPreferences prefs =
-
-        await SharedPreferences.getInstance();
-
-    await prefs.setString(
-
-      key,
-
-      value,
-
-    );
-
+    await prefs.setString(key, value);
   }
 
   // ===========================================================================
@@ -255,21 +187,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   Future<void> _showAccount() async {
-
     await Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const AccountSettingsScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const AccountSettingsScreen()),
     );
 
     await _loadSettings();
-
   }
 
   // ===========================================================================
@@ -279,19 +203,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _openSubscription() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const SubscriptionScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const SubscriptionScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -301,19 +217,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showPrivacy() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const PrivacyPolicyScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -323,19 +231,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showSecurity() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const SecurityScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const SecurityScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -345,19 +245,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showConnectedDevices() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const ConnectedDevicesScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const ConnectedDevicesScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -367,19 +259,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showHelp() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const HelpSupportScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -389,19 +273,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showEqualizer() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const EqualizerScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const EqualizerScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -411,19 +287,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showLyrics() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const LyricsScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const LyricsScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -433,19 +301,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showAppearance() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const AppearanceScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const AppearanceScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -455,23 +315,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showAudioQuality() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const AudioQualityScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const AudioQualityScreen()),
     ).then((_) {
-
       _loadSettings();
-
     });
-
   }
 
   // ===========================================================================
@@ -481,69 +331,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showLanguage() {
-
     _showSelectionSheet(
-
       title: 'Language',
 
       subtitle: 'Choose your preferred language',
 
-      options: const [
-
-        'English',
-
-        'Hindi',
-
-      ],
+      options: const ['English', 'Hindi'],
 
       selected: _language,
 
       onSelected: (value) async {
-
         setState(() {
-
           _language = value;
-
         });
 
-        await _setString(
-
-          'settings_language',
-
-          value,
-
-        );
+        await _setString('settings_language', value);
 
         if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
-
           SnackBar(
-
             content: Text(
-
               value == 'Hindi'
-
                   ? 'Language changed to Hindi'
-
                   : 'Language changed to English',
-
             ),
 
-            duration: const Duration(
-
-              milliseconds: 1200,
-
-            ),
-
+            duration: const Duration(milliseconds: 1200),
           ),
-
         );
-
       },
-
     );
-
   }
 
   // ===========================================================================
@@ -553,7 +371,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showSelectionSheet({
-
     required String title,
 
     required String subtitle,
@@ -563,13 +380,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required String selected,
 
     required ValueChanged<String> onSelected,
-
   }) {
-
     final ThemeData theme = Theme.of(context);
 
     showModalBottomSheet<void>(
-
       context: context,
 
       backgroundColor: theme.colorScheme.surface,
@@ -577,279 +391,142 @@ class _SettingsScreenState extends State<SettingsScreen> {
       isScrollControlled: true,
 
       shape: const RoundedRectangleBorder(
-
-        borderRadius: BorderRadius.vertical(
-
-          top: Radius.circular(28),
-
-        ),
-
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
 
       builder: (sheetContext) {
-
         return SafeArea(
-
           child: Padding(
-
-            padding: const EdgeInsets.fromLTRB(
-
-              20,
-
-              16,
-
-              20,
-
-              24,
-
-            ),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
 
             child: Column(
-
               mainAxisSize: MainAxisSize.min,
 
               children: [
+                _SheetHandle(theme: theme),
 
-                _SheetHandle(
-
-                  theme: theme,
-
-                ),
-
-                const SizedBox(
-
-                  height: 20,
-
-                ),
+                const SizedBox(height: 20),
 
                 Align(
-
                   alignment: Alignment.centerLeft,
 
                   child: Text(
-
                     title,
 
                     style: TextStyle(
-
                       color: theme.colorScheme.onSurface,
 
                       fontSize: 20,
 
                       fontWeight: FontWeight.w700,
-
                     ),
-
                   ),
-
                 ),
 
-                const SizedBox(
-
-                  height: 6,
-
-                ),
+                const SizedBox(height: 6),
 
                 Align(
-
                   alignment: Alignment.centerLeft,
 
                   child: Text(
-
                     subtitle,
 
                     style: TextStyle(
-
                       color: theme.colorScheme.onSurface.withValues(
-
                         alpha: 0.55,
-
                       ),
 
                       fontSize: 13,
-
                     ),
-
                   ),
-
                 ),
 
-                const SizedBox(
+                const SizedBox(height: 16),
 
-                  height: 16,
+                ...options.map((option) {
+                  final bool isSelected = option == selected;
 
-                ),
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
 
-                ...options.map(
+                    child: Material(
+                      color: Colors.transparent,
 
-                  (option) {
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
 
-                    final bool isSelected =
+                        onTap: () {
+                          onSelected(option);
 
-                        option == selected;
+                          Navigator.pop(sheetContext);
+                        },
 
-                    return Padding(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
 
-                      padding: const EdgeInsets.only(
+                          width: double.infinity,
 
-                        bottom: 8,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
 
-                      ),
-
-                      child: Material(
-
-                        color: Colors.transparent,
-
-                        child: InkWell(
-
-                          borderRadius:
-
-                              BorderRadius.circular(16),
-
-                          onTap: () {
-
-                            onSelected(option);
-
-                            Navigator.pop(
-
-                              sheetContext,
-
-                            );
-
-                          },
-
-                          child: AnimatedContainer(
-
-                            duration: const Duration(
-
-                              milliseconds: 180,
-
-                            ),
-
-                            width: double.infinity,
-
-                            padding:
-
-                                const EdgeInsets.symmetric(
-
-                              horizontal: 16,
-
-                              vertical: 15,
-
-                            ),
-
-                            decoration: BoxDecoration(
-
-                              color: isSelected
-
-                                  ? _purple.withValues(
-
-                                      alpha: 0.12,
-
-                                    )
-
-                                  : theme.colorScheme.onSurface
-
-                                      .withValues(
-
-                                      alpha: 0.04,
-
-                                    ),
-
-                              borderRadius:
-
-                                  BorderRadius.circular(16),
-
-                              border: Border.all(
-
-                                color: isSelected
-
-                                    ? _purple.withValues(
-
-                                        alpha: 0.45,
-
-                                      )
-
-                                    : Colors.transparent,
-
-                              ),
-
-                            ),
-
-                            child: Row(
-
-                              children: [
-
-                                Expanded(
-
-                                  child: Text(
-
-                                    option,
-
-                                    style: TextStyle(
-
-                                      color: theme
-
-                                          .colorScheme
-
-                                          .onSurface,
-
-                                      fontSize: 14,
-
-                                      fontWeight: isSelected
-
-                                          ? FontWeight.w700
-
-                                          : FontWeight.w500,
-
-                                    ),
-
-                                  ),
-
-                                ),
-
-                                if (isSelected)
-
-                                  const Icon(
-
-                                    Icons
-
-                                        .check_circle_rounded,
-
-                                    color: _purple,
-
-                                    size: 21,
-
-                                  ),
-
-                              ],
-
-                            ),
-
+                            vertical: 15,
                           ),
 
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? _purple.withValues(alpha: 0.12)
+                                : theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.04,
+                                  ),
+
+                            borderRadius: BorderRadius.circular(16),
+
+                            border: Border.all(
+                              color: isSelected
+                                  ? _purple.withValues(alpha: 0.45)
+                                  : Colors.transparent,
+                            ),
+                          ),
+
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  option,
+
+                                  style: TextStyle(
+                                    color: theme.colorScheme.onSurface,
+
+                                    fontSize: 14,
+
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+
+                                  color: _purple,
+
+                                  size: 21,
+                                ),
+                            ],
+                          ),
                         ),
-
                       ),
-
-                    );
-
-                  },
-
-                ),
-
+                    ),
+                  );
+                }),
               ],
-
             ),
-
           ),
-
         );
-
       },
-
     );
-
   }
 
   // ===========================================================================
@@ -859,19 +536,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showFeedback() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const FeedbackScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const FeedbackScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -881,19 +550,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _showAbout() {
-
     Navigator.push(
-
       context,
 
-      MaterialPageRoute(
-
-        builder: (_) => const AboutScreen(),
-
-      ),
-
+      MaterialPageRoute(builder: (_) => const AboutScreen()),
     );
-
   }
 
   // ===========================================================================
@@ -903,106 +564,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   void _logout() {
-
     final ThemeData theme = Theme.of(context);
 
     showDialog<void>(
-
       context: context,
 
       barrierDismissible: false,
 
       builder: (dialogContext) {
-
         return AlertDialog(
-
           backgroundColor: theme.colorScheme.surface,
 
           surfaceTintColor: Colors.transparent,
 
           shape: RoundedRectangleBorder(
-
             borderRadius: BorderRadius.circular(20),
-
           ),
 
           title: Text(
-
             'Log out?',
 
             style: TextStyle(
-
               color: theme.colorScheme.onSurface,
 
               fontWeight: FontWeight.w700,
-
             ),
-
           ),
 
           content: Text(
-
             'Are you sure you want to log out of SONEXA?',
 
             style: TextStyle(
-
-              color: theme.colorScheme.onSurface.withValues(
-
-                alpha: 0.6,
-
-              ),
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
 
               fontSize: 14,
-
             ),
-
           ),
 
           actions: [
-
             TextButton(
-
               onPressed: () {
-
-                Navigator.pop(
-
-                  dialogContext,
-
-                );
-
+                Navigator.pop(dialogContext);
               },
 
               child: Text(
-
                 'Cancel',
 
                 style: TextStyle(
-
-                  color: theme.colorScheme.onSurface.withValues(
-
-                    alpha: 0.6,
-
-                  ),
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
 
                   fontWeight: FontWeight.w600,
-
                 ),
-
               ),
-
             ),
 
             ElevatedButton(
-
               onPressed: () async {
-
                 // Close confirmation dialog first.
 
-                Navigator.pop(
-
-                  dialogContext,
-
-                );
+                Navigator.pop(dialogContext);
 
                 // ============================================================
 
@@ -1010,9 +630,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                 // ============================================================
 
-                final PlayerController player =
-
-                    PlayerScope.of(context);
+                final PlayerController player = PlayerScope.of(context);
 
                 await player.stop();
 
@@ -1023,39 +641,20 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ============================================================
 
                 final SharedPreferences prefs =
-
                     await SharedPreferences.getInstance();
 
                 await prefs.setBool('hasRegistered', true);
 
-                  final bool saved =
-
-                    await prefs.setBool(
-
-                  'isLoggedIn',
-
-                  false,
-
-                );
+                final bool saved = await prefs.setBool('isLoggedIn', false);
 
                 await prefs.reload();
 
                 final bool currentLoginState =
-
-                    prefs.getBool(
-
-                          'isLoggedIn',
-
-                        ) ??
-
-                        false;
+                    prefs.getBool('isLoggedIn') ?? false;
 
                 debugPrint(
-
                   'SONEXA LOGOUT -> saved=$saved, '
-
                   'isLoggedIn=$currentLoginState',
-
                 );
 
                 if (!mounted) return;
@@ -1067,71 +666,42 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 // ============================================================
 
                 Navigator.pushAndRemoveUntil(
-
                   context,
 
-                  MaterialPageRoute(
-
-                    builder: (_) => const LoginScreen(),
-
-                  ),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
 
                   (route) => false,
-
                 );
-
               },
 
               style: ElevatedButton.styleFrom(
-
                 backgroundColor: _purple,
 
                 foregroundColor: Colors.white,
 
                 elevation: 0,
 
-                padding:
-
-                    const EdgeInsets.symmetric(
-
+                padding: const EdgeInsets.symmetric(
                   horizontal: 18,
 
                   vertical: 11,
-
                 ),
 
                 shape: RoundedRectangleBorder(
-
-                  borderRadius:
-
-                      BorderRadius.circular(14),
-
+                  borderRadius: BorderRadius.circular(14),
                 ),
-
               ),
 
               child: const Text(
-
                 'Log out',
 
-                style: TextStyle(
-
-                  fontWeight: FontWeight.w700,
-
-                ),
-
+                style: TextStyle(fontWeight: FontWeight.w700),
               ),
-
             ),
-
           ],
-
         );
-
       },
-
     );
-
   }
 
   // ===========================================================================
@@ -1141,57 +711,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // ===========================================================================
 
   @override
-
   Widget build(BuildContext context) {
-
     final ThemeData theme = Theme.of(context);
 
-    final bool isDark =
-
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-
-      backgroundColor:
-
-          theme.scaffoldBackgroundColor,
+      backgroundColor: theme.scaffoldBackgroundColor,
 
       body: SafeArea(
-
         child: Column(
-
           children: [
-
             // =================================================================
 
             // FIXED HEADER
 
             // =================================================================
-
             Padding(
-
-              padding: const EdgeInsets.fromLTRB(
-
-                10,
-
-                16,
-
-                10,
-
-                0,
-
-              ),
+              padding: const EdgeInsets.fromLTRB(10, 16, 10, 0),
 
               child: Align(
-
                 alignment: Alignment.centerLeft,
 
                 child: Text(
-
                   'Settings',
 
                   style: TextStyle(
-
                     color: theme.colorScheme.onSurface,
 
                     fontSize: 27,
@@ -1199,13 +744,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     fontWeight: FontWeight.w800,
 
                     letterSpacing: -0.65,
-
                   ),
-
                 ),
-
               ),
-
             ),
 
             // =================================================================
@@ -1213,747 +754,416 @@ class _SettingsScreenState extends State<SettingsScreen> {
             // SCROLLABLE SETTINGS CONTENT
 
             // =================================================================
-
             Expanded(
-
               child: ListView(
+                physics: const ControlledSettingsScrollPhysics(),
 
-                physics: const BouncingScrollPhysics(),
-
-                padding: const EdgeInsets.fromLTRB(
-
-                  10,
-
-                  28,
-
-                  10,
-
-                  140,
-
-                ),
+                padding: const EdgeInsets.fromLTRB(10, 28, 10, 16),
 
                 children: [
+                  // =================================================================
 
-            // =================================================================
+                  // ACCOUNT
 
-            // ACCOUNT
+                  // =================================================================
+                  const _SectionHeader(title: 'ACCOUNT'),
 
-            // =================================================================
+                  const SizedBox(height: 10),
 
-            const _SectionHeader(
+                  _AccountGroup(
+                    accountName: _accountName,
 
-              title: 'ACCOUNT',
+                    accountEmail: _accountEmail,
 
-            ),
+                    accountPhoto: _accountPhoto,
 
-            const SizedBox(
+                    onAccountTap: _showAccount,
 
-              height: 10,
+                    onSubscriptionTap: _openSubscription,
+                  ),
 
-            ),
+                  const SizedBox(height: 22),
 
-            _AccountGroup(
+                  // =================================================================
 
-              accountName: _accountName,
+                  // PLAYBACK
 
-              accountEmail: _accountEmail,
+                  // =================================================================
+                  const _SectionHeader(title: 'PLAYBACK'),
 
-              accountPhoto: _accountPhoto,
+                  const SizedBox(height: 10),
 
-              onAccountTap: _showAccount,
+                  _GroupedCard(
+                    children: [
+                      _GroupedSettingsItem(
+                        icon: Icons.equalizer_rounded,
 
-              onSubscriptionTap:
+                        title: 'Equalizer',
 
-                  _openSubscription,
+                        subtitle: _equalizer,
 
-            ),
-
-            const SizedBox(
-
-              height: 22,
-
-            ),
-
-            // =================================================================
-
-            // PLAYBACK
-
-            // =================================================================
-
-            const _SectionHeader(
-
-              title: 'PLAYBACK',
-
-            ),
-
-            const SizedBox(
-
-              height: 10,
-
-            ),
-
-            _GroupedCard(
-
-              children: [
-
-                _GroupedSettingsItem(
-
-                  icon: Icons.equalizer_rounded,
-
-                  title: 'Equalizer',
-
-                  subtitle: _equalizer,
-
-                  onTap: _showEqualizer,
-
-                ),
-
-                const _GroupedDivider(),
-
-                _GroupedSettingsItem(
-
-                  icon: Icons.high_quality_rounded,
-
-                  title: 'Audio Quality',
-
-                  subtitle: _audioQuality,
-
-                  onTap: _showAudioQuality,
-
-                ),
-
-                const _GroupedDivider(),
-
-                _GroupedSettingsItem(
-
-                  icon: Icons.lyrics_rounded,
-
-                  title: 'Lyrics',
-
-                  subtitle: _lyricsMode,
-
-                  onTap: _showLyrics,
-
-                ),
-
-                const _GroupedDivider(),
-
-                _GroupedSwitchItem(
-
-                  icon: Icons.play_arrow_rounded,
-
-                  title: 'Autoplay',
-
-                  subtitle:
-
-                      'Continue playing similar songs',
-
-                  value: _autoplay,
-
-                  onChanged: (value) async {
-
-                    setState(() {
-
-                      _autoplay = value;
-
-                    });
-
-                    await _setBool(
-
-                      'settings_autoplay',
-
-                      value,
-
-                    );
-
-                  },
-
-                ),
-
-              ],
-
-            ),
-
-            const SizedBox(
-
-              height: 22,
-
-            ),
-
-            // =================================================================
-
-            // APPEARANCE
-
-            // =================================================================
-
-            const _SectionHeader(
-
-              title: 'APPEARANCE',
-
-            ),
-
-            const SizedBox(
-
-              height: 10,
-
-            ),
-
-            _GroupedCard(
-
-              children: [
-
-                _GroupedSettingsItem(
-
-                  icon: Icons.brightness_6_rounded,
-
-                  title: 'Appearance',
-
-                  subtitle:
-
-                      _themeController.appearanceName,
-
-                  onTap: _showAppearance,
-
-                ),
-
-                const _GroupedDivider(),
-
-                _GroupedSettingsItem(
-
-                  icon: Icons.language_rounded,
-
-                  title: 'Language',
-
-                  subtitle: _language,
-
-                  onTap: _showLanguage,
-
-                ),
-
-              ],
-
-            ),
-
-            const SizedBox(
-
-              height: 22,
-
-            ),
-
-            // =================================================================
-
-            // NOTIFICATIONS
-
-            // =================================================================
-
-            const _SectionHeader(
-
-              title: 'NOTIFICATIONS',
-
-            ),
-
-            const SizedBox(
-
-              height: 10,
-
-            ),
-
-            _GroupedCard(
-
-              children: [
-
-                _GroupedSwitchItem(
-
-                  icon:
-
-                      Icons.notifications_active_outlined,
-
-                  title: 'Notifications',
-
-                  subtitle:
-
-                      'New releases, updates and recommendations',
-
-                  value: _notifications,
-
-                  onChanged: (value) async {
-
-                    setState(() {
-
-                      _notifications = value;
-
-                    });
-
-                    await _setBool(
-
-                      'settings_notifications',
-
-                      value,
-
-                    );
-
-                  },
-
-                ),
-
-              ],
-
-            ),
-
-            const SizedBox(
-
-              height: 22,
-
-            ),
-
-            // =================================================================
-
-            // DATA & STORAGE
-
-            // =================================================================
-
-            const _SectionHeader(
-
-              title: 'DATA & STORAGE',
-
-            ),
-
-            const SizedBox(
-
-              height: 10,
-
-            ),
-
-            _GroupedCard(
-
-              children: [
-
-                _GroupedSwitchItem(
-
-                  icon:
-
-                      Icons.data_saver_on_rounded,
-
-                  title: 'Data Saver',
-
-                  subtitle:
-
-                      'Reduce mobile data usage',
-
-                  value: _dataSaver,
-
-                  onChanged: (value) async {
-
-                    setState(() {
-
-                      _dataSaver = value;
-
-                    });
-
-                    await _setBool(
-
-                      'settings_data_saver',
-
-                      value,
-
-                    );
-
-                  },
-
-                ),
-
-              ],
-
-            ),
-
-            const SizedBox(
-
-              height: 22,
-
-            ),
-
-            // =================================================================
-
-            // PRIVACY & SECURITY
-
-            // =================================================================
-
-            const _SectionHeader(
-
-              title: 'PRIVACY & SECURITY',
-
-            ),
-
-            const SizedBox(
-
-              height: 10,
-
-            ),
-
-            _GroupedCard(
-
-              children: [
-
-                _GroupedSettingsItem(
-
-                  icon:
-
-                      Icons.privacy_tip_outlined,
-
-                  title: 'Privacy',
-
-                  subtitle:
-
-                      'Privacy policy and your data',
-
-                  onTap: _showPrivacy,
-
-                ),
-
-                const _GroupedDivider(),
-
-                _GroupedSettingsItem(
-
-                  icon:
-
-                      Icons.lock_outline_rounded,
-
-                  title: 'Security',
-
-                  subtitle:
-
-                      'Password and security settings',
-
-                  onTap: _showSecurity,
-
-                ),
-
-                const _GroupedDivider(),
-
-                _GroupedSettingsItem(
-
-                  icon:
-
-                      Icons.devices_other_rounded,
-
-                  title: 'Connected Devices',
-
-                  subtitle:
-
-                      'Manage your connected devices',
-
-                  onTap: _showConnectedDevices,
-
-                ),
-
-              ],
-
-            ),
-
-            const SizedBox(
-
-              height: 22,
-
-            ),
-
-            // =================================================================
-
-            // HELP & SUPPORT
-
-            // =================================================================
-
-            const _SectionHeader(
-
-              title: 'HELP & SUPPORT',
-
-            ),
-
-            const SizedBox(
-
-              height: 10,
-
-            ),
-
-            _GroupedCard(
-
-              children: [
-
-                _GroupedSettingsItem(
-
-                  icon:
-
-                      Icons.help_center_outlined,
-
-                  title: 'Help & Support',
-
-                  subtitle:
-
-                      'Get help with SONEXA',
-
-                  onTap: _showHelp,
-
-                ),
-
-                const _GroupedDivider(),
-
-                _GroupedSettingsItem(
-
-                  icon:
-
-                      Icons.feedback_outlined,
-
-                  title: 'Send Feedback',
-
-                  subtitle:
-
-                      'Tell us how we can improve',
-
-                  onTap: _showFeedback,
-
-                ),
-
-              ],
-
-            ),
-
-            const SizedBox(
-
-              height: 22,
-
-            ),
-
-            // =================================================================
-
-            // ABOUT
-
-            // =================================================================
-
-            const _SectionHeader(
-
-              title: 'ABOUT',
-
-            ),
-
-            const SizedBox(
-
-              height: 10,
-
-            ),
-
-            _GroupedCard(
-
-              children: [
-
-                _GroupedSettingsItem(
-
-                  icon:
-
-                      Icons.info_outline_rounded,
-
-                  title: 'About SONEXA',
-
-                  subtitle: 'Version 1.0.0',
-
-                  onTap: _showAbout,
-
-                ),
-
-              ],
-
-            ),
-
-            const SizedBox(
-
-              height: 30,
-
-            ),
-
-            // =================================================================
-
-            // LOGOUT
-
-            // =================================================================
-
-            _LogoutButton(
-
-              onTap: _logout,
-
-            ),
-
-            const SizedBox(
-
-              height: 26,
-
-            ),
-
-            // =================================================================
-
-            // BRANDING
-
-            // =================================================================
-
-            Center(
-
-              child: Column(
-
-                children: [
-
-                  Container(
-
-                    width: 42,
-
-                    height: 42,
-
-                    decoration: BoxDecoration(
-
-                      borderRadius:
-
-                          BorderRadius.circular(13),
-
-                      gradient:
-
-                          const LinearGradient(
-
-                        colors: [
-
-                          Color(0xFF913CFF),
-
-                          Color(0xFF5A1EA8),
-
-                        ],
-
-                        begin: Alignment.topLeft,
-
-                        end: Alignment.bottomRight,
-
+                        onTap: _showEqualizer,
                       ),
 
-                    ),
+                      const _GroupedDivider(),
 
-                    child: ClipRRect(
+                      _GroupedSettingsItem(
+                        icon: Icons.high_quality_rounded,
 
-                      borderRadius:
+                        title: 'Audio Quality',
 
-                          BorderRadius.circular(13),
+                        subtitle: _audioQuality,
 
-                      child: Image.asset(
+                        onTap: _showAudioQuality,
+                      ),
 
-                        'assets/images/sonexa_logo.png',
+                      const _GroupedDivider(),
 
-                        fit: BoxFit.cover,
+                      _GroupedSettingsItem(
+                        icon: Icons.lyrics_rounded,
 
-                        errorBuilder: (
+                        title: 'Lyrics',
 
-                          context,
+                        subtitle: _lyricsMode,
 
-                          error,
+                        onTap: _showLyrics,
+                      ),
 
-                          stackTrace,
+                      const _GroupedDivider(),
 
-                        ) {
+                      _GroupedSwitchItem(
+                        icon: Icons.play_arrow_rounded,
 
-                          return const Icon(
+                        title: 'Autoplay',
 
-                            Icons.graphic_eq_rounded,
+                        subtitle: 'Continue playing similar songs',
 
-                            color: Colors.white,
+                        value: _autoplay,
 
-                            size: 23,
+                        onChanged: (value) async {
+                          setState(() {
+                            _autoplay = value;
+                          });
 
-                          );
-
+                          await _setBool('settings_autoplay', value);
                         },
+                      ),
+                    ],
+                  ),
 
+                  const SizedBox(height: 22),
+
+                  // =================================================================
+
+                  // APPEARANCE
+
+                  // =================================================================
+                  const _SectionHeader(title: 'APPEARANCE'),
+
+                  const SizedBox(height: 10),
+
+                  _GroupedCard(
+                    children: [
+                      _GroupedSettingsItem(
+                        icon: Icons.brightness_6_rounded,
+
+                        title: 'Appearance',
+
+                        subtitle: _themeController.appearanceName,
+
+                        onTap: _showAppearance,
                       ),
 
-                    ),
+                      const _GroupedDivider(),
 
+                      _GroupedSettingsItem(
+                        icon: Icons.language_rounded,
+
+                        title: 'Language',
+
+                        subtitle: _language,
+
+                        onTap: _showLanguage,
+                      ),
+                    ],
                   ),
 
-                  const SizedBox(
+                  const SizedBox(height: 22),
 
-                    height: 9,
+                  // =================================================================
 
+                  // NOTIFICATIONS
+
+                  // =================================================================
+                  const _SectionHeader(title: 'NOTIFICATIONS'),
+
+                  const SizedBox(height: 10),
+
+                  _GroupedCard(
+                    children: [
+                      _GroupedSwitchItem(
+                        icon: Icons.notifications_active_outlined,
+
+                        title: 'Notifications',
+
+                        subtitle: 'New releases, updates and recommendations',
+
+                        value: _notifications,
+
+                        onChanged: (value) async {
+                          setState(() {
+                            _notifications = value;
+                          });
+
+                          await _setBool('settings_notifications', value);
+                        },
+                      ),
+                    ],
                   ),
 
-                  Text(
+                  const SizedBox(height: 22),
 
-                    'SONEXA',
+                  // =================================================================
 
-                    style: TextStyle(
+                  // DATA & STORAGE
 
-                      color: isDark
+                  // =================================================================
+                  const _SectionHeader(title: 'DATA & STORAGE'),
 
-                          ? Colors.white.withValues(
+                  const SizedBox(height: 10),
 
-                              alpha: 0.22,
+                  _GroupedCard(
+                    children: [
+                      _GroupedSwitchItem(
+                        icon: Icons.data_saver_on_rounded,
 
-                            )
+                        title: 'Data Saver',
 
-                          : Colors.black.withValues(
+                        subtitle: 'Reduce mobile data usage',
 
-                              alpha: 0.25,
+                        value: _dataSaver,
 
+                        onChanged: (value) async {
+                          setState(() {
+                            _dataSaver = value;
+                          });
+
+                          await _setBool('settings_data_saver', value);
+                        },
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // =================================================================
+
+                  // PRIVACY & SECURITY
+
+                  // =================================================================
+                  const _SectionHeader(title: 'PRIVACY & SECURITY'),
+
+                  const SizedBox(height: 10),
+
+                  _GroupedCard(
+                    children: [
+                      _GroupedSettingsItem(
+                        icon: Icons.privacy_tip_outlined,
+
+                        title: 'Privacy',
+
+                        subtitle: 'Privacy policy and your data',
+
+                        onTap: _showPrivacy,
+                      ),
+
+                      const _GroupedDivider(),
+
+                      _GroupedSettingsItem(
+                        icon: Icons.lock_outline_rounded,
+
+                        title: 'Security',
+
+                        subtitle: 'Password and security settings',
+
+                        onTap: _showSecurity,
+                      ),
+
+                      const _GroupedDivider(),
+
+                      _GroupedSettingsItem(
+                        icon: Icons.devices_other_rounded,
+
+                        title: 'Connected Devices',
+
+                        subtitle: 'Manage your connected devices',
+
+                        onTap: _showConnectedDevices,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // =================================================================
+
+                  // HELP & SUPPORT
+
+                  // =================================================================
+                  const _SectionHeader(title: 'HELP & SUPPORT'),
+
+                  const SizedBox(height: 10),
+
+                  _GroupedCard(
+                    children: [
+                      _GroupedSettingsItem(
+                        icon: Icons.help_center_outlined,
+
+                        title: 'Help & Support',
+
+                        subtitle: 'Get help with SONEXA',
+
+                        onTap: _showHelp,
+                      ),
+
+                      const _GroupedDivider(),
+
+                      _GroupedSettingsItem(
+                        icon: Icons.feedback_outlined,
+
+                        title: 'Send Feedback',
+
+                        subtitle: 'Tell us how we can improve',
+
+                        onTap: _showFeedback,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 22),
+
+                  // =================================================================
+
+                  // ABOUT
+
+                  // =================================================================
+                  const _SectionHeader(title: 'ABOUT'),
+
+                  const SizedBox(height: 10),
+
+                  _GroupedCard(
+                    children: [
+                      _GroupedSettingsItem(
+                        icon: Icons.info_outline_rounded,
+
+                        title: 'About SONEXA',
+
+                        subtitle: 'Version 1.0.0',
+
+                        onTap: _showAbout,
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 30),
+
+                  // =================================================================
+
+                  // LOGOUT
+
+                  // =================================================================
+                  _LogoutButton(onTap: _logout),
+
+                  const SizedBox(height: 26),
+
+                  // =================================================================
+
+                  // BRANDING
+
+                  // =================================================================
+                  Center(
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 42,
+
+                          height: 42,
+
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(13),
+
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF913CFF), Color(0xFF5A1EA8)],
+
+                              begin: Alignment.topLeft,
+
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(13),
+
+                            child: Image.asset(
+                              'assets/images/sonexa_logo.png',
+
+                              fit: BoxFit.cover,
+
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.graphic_eq_rounded,
+
+                                  color: Colors.white,
+
+                                  size: 23,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 9),
+
+                        Text(
+                          'SONEXA',
+
+                          style: TextStyle(
+                            color: isDark
+                                ? Colors.white.withValues(alpha: 0.22)
+                                : Colors.black.withValues(alpha: 0.25),
+
+                            fontSize: 13,
+
+                            fontWeight: FontWeight.w800,
+
+                            letterSpacing: 2,
+                          ),
+                        ),
+
+                        const SizedBox(height: 5),
+
+                        Text(
+                          'Your music. Your mood. Your sound.',
+
+                          style: TextStyle(
+                            color: theme.colorScheme.onSurface.withValues(
+                              alpha: 0.3,
                             ),
 
-                      fontSize: 13,
-
-                      fontWeight: FontWeight.w800,
-
-                      letterSpacing: 2,
-
+                            fontSize: 10.5,
+                          ),
+                        ),
+                      ],
                     ),
-
                   ),
-
-                  const SizedBox(
-
-                    height: 5,
-
-                  ),
-
-                  Text(
-
-                    'Your music. Your mood. Your sound.',
-
-                    style: TextStyle(
-
-                      color:
-
-                          theme.colorScheme.onSurface.withValues(
-
-                        alpha: 0.3,
-
-                      ),
-
-                      fontSize: 10.5,
-
-                    ),
-
-                  ),
-
                 ],
-
               ),
-
             ),
-
-                ],
-
-              ),
-
-            ),
-
           ],
-
         ),
-
       ),
-
     );
-
   }
-
 }
 
 // =============================================================================
@@ -1963,49 +1173,28 @@ class _SettingsScreenState extends State<SettingsScreen> {
 // =============================================================================
 
 class _SectionHeader extends StatelessWidget {
-
   final String title;
 
-  const _SectionHeader({
-
-    required this.title,
-
-  });
+  const _SectionHeader({required this.title});
 
   @override
-
   Widget build(BuildContext context) {
-
-    final ThemeData theme =
-
-        Theme.of(context);
+    final ThemeData theme = Theme.of(context);
 
     return Text(
-
       title,
 
       style: TextStyle(
-
-        color:
-
-            theme.colorScheme.onSurface.withValues(
-
-          alpha: 0.55,
-
-        ),
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.55),
 
         fontSize: 13,
 
         fontWeight: FontWeight.w700,
 
         letterSpacing: 0.8,
-
       ),
-
     );
-
   }
-
 }
 
 // =============================================================================
@@ -2015,7 +1204,6 @@ class _SectionHeader extends StatelessWidget {
 // =============================================================================
 
 class _AccountGroup extends StatelessWidget {
-
   final String accountName;
 
   final String accountEmail;
@@ -2027,7 +1215,6 @@ class _AccountGroup extends StatelessWidget {
   final VoidCallback onSubscriptionTap;
 
   const _AccountGroup({
-
     required this.accountName,
 
     required this.accountEmail,
@@ -2037,161 +1224,79 @@ class _AccountGroup extends StatelessWidget {
     required this.onAccountTap,
 
     required this.onSubscriptionTap,
-
   });
 
   @override
-
   Widget build(BuildContext context) {
-
-    final ThemeData theme =
-
-        Theme.of(context);
+    final ThemeData theme = Theme.of(context);
 
     final bool hasPhoto =
-
         accountPhoto != null &&
-
-            accountPhoto!.isNotEmpty &&
-
-            File(accountPhoto!).existsSync();
+        accountPhoto!.isNotEmpty &&
+        File(accountPhoto!).existsSync();
 
     return Container(
-
       decoration: BoxDecoration(
-
         color: theme.colorScheme.surface,
 
-        borderRadius:
-
-            BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20),
 
         border: Border.all(
-
-          color:
-
-              theme.colorScheme.onSurface.withValues(
-
-            alpha: 0.07,
-
-          ),
-
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.07),
         ),
 
         boxShadow: [
-
           BoxShadow(
-
             color: Colors.black.withValues(
-
-              alpha:
-
-                  theme.brightness ==
-
-                          Brightness.dark
-
-                      ? 0.18
-
-                      : 0.05,
-
+              alpha: theme.brightness == Brightness.dark ? 0.18 : 0.05,
             ),
 
             blurRadius: 18,
 
             offset: const Offset(0, 7),
-
           ),
-
         ],
-
       ),
 
       child: Column(
-
         children: [
-
           // =================================================================
 
           // ACCOUNT
 
           // =================================================================
-
           InkWell(
-
             onTap: onAccountTap,
 
-            borderRadius:
-
-                const BorderRadius.vertical(
-
-              top: Radius.circular(24),
-
-            ),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
 
             child: Padding(
-
-              padding:
-
-                  const EdgeInsets.fromLTRB(
-
-                18,
-
-                18,
-
-                16,
-
-                18,
-
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 18, 16, 18),
 
               child: Row(
-
                 children: [
-
                   // PROFILE PHOTO
 
                   Container(
-
                     width: 62,
 
                     height: 62,
 
-                    decoration:
-
-                        const BoxDecoration(
-
+                    decoration: const BoxDecoration(
                       shape: BoxShape.circle,
 
-                      gradient:
+                      gradient: LinearGradient(
+                        colors: [Color(0xFF913CFF), Color(0xFF5A1EA8)],
 
-                          LinearGradient(
+                        begin: Alignment.topLeft,
 
-                        colors: [
-
-                          Color(0xFF913CFF),
-
-                          Color(0xFF5A1EA8),
-
-                        ],
-
-                        begin:
-
-                            Alignment.topLeft,
-
-                        end:
-
-                            Alignment.bottomRight,
-
+                        end: Alignment.bottomRight,
                       ),
-
                     ),
 
                     child: ClipOval(
-
                       child: hasPhoto
-
                           ? Image.file(
-
                               File(accountPhoto!),
 
                               width: 62,
@@ -2200,166 +1305,83 @@ class _AccountGroup extends StatelessWidget {
 
                               fit: BoxFit.cover,
 
-                              errorBuilder:
-
-                                  (
-
-                                context,
-
-                                error,
-
-                                stackTrace,
-
-                              ) {
-
+                              errorBuilder: (context, error, stackTrace) {
                                 return const Icon(
-
                                   Icons.person_rounded,
 
                                   color: Colors.white,
 
                                   size: 31,
-
                                 );
-
                               },
-
                             )
-
                           : const Icon(
-
                               Icons.person_rounded,
 
                               color: Colors.white,
 
                               size: 31,
-
                             ),
-
                     ),
-
                   ),
 
-                  const SizedBox(
-
-                    width: 15,
-
-                  ),
+                  const SizedBox(width: 15),
 
                   // NAME + EMAIL
-
                   Expanded(
-
                     child: Column(
-
-                      crossAxisAlignment:
-
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
 
                       children: [
-
                         Text(
-
                           accountName,
 
                           maxLines: 1,
 
-                          overflow:
-
-                              TextOverflow.ellipsis,
+                          overflow: TextOverflow.ellipsis,
 
                           style: TextStyle(
-
-                            color: theme
-
-                                .colorScheme
-
-                                .onSurface,
+                            color: theme.colorScheme.onSurface,
 
                             fontSize: 18,
 
-                            fontWeight:
-
-                                FontWeight.w700,
-
+                            fontWeight: FontWeight.w700,
                           ),
-
                         ),
 
-                        const SizedBox(
-
-                          height: 5,
-
-                        ),
+                        const SizedBox(height: 5),
 
                         Text(
-
                           accountEmail,
 
                           maxLines: 1,
 
-                          overflow:
-
-                              TextOverflow.ellipsis,
+                          overflow: TextOverflow.ellipsis,
 
                           style: TextStyle(
-
-                            color: theme
-
-                                .colorScheme
-
-                                .onSurface
-
-                                .withValues(
-
+                            color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.5,
-
                             ),
 
                             fontSize: 12.5,
-
                           ),
-
                         ),
-
                       ],
-
                     ),
-
                   ),
 
-                  const SizedBox(
-
-                    width: 8,
-
-                  ),
+                  const SizedBox(width: 8),
 
                   Icon(
-
                     Icons.chevron_right_rounded,
 
-                    color: theme
-
-                        .colorScheme
-
-                        .onSurface
-
-                        .withValues(
-
-                      alpha: 0.4,
-
-                    ),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
 
                     size: 28,
-
                   ),
-
                 ],
-
               ),
-
             ),
-
           ),
 
           const _GroupedDivider(),
@@ -2369,159 +1391,75 @@ class _AccountGroup extends StatelessWidget {
           // SUBSCRIPTION
 
           // =================================================================
-
           InkWell(
-
             onTap: onSubscriptionTap,
 
-            borderRadius:
-
-                const BorderRadius.vertical(
-
+            borderRadius: const BorderRadius.vertical(
               bottom: Radius.circular(24),
-
             ),
 
             child: Padding(
-
-              padding:
-
-                  const EdgeInsets.fromLTRB(
-
-                18,
-
-                14,
-
-                16,
-
-                14,
-
-              ),
+              padding: const EdgeInsets.fromLTRB(18, 14, 16, 14),
 
               child: Row(
-
                 children: [
-
                   const _IconBox(
-
-                    icon:
-
-                        Icons.workspace_premium_rounded,
+                    icon: Icons.workspace_premium_rounded,
 
                     size: 40,
-
                   ),
 
-                  const SizedBox(
-
-                    width: 13,
-
-                  ),
+                  const SizedBox(width: 13),
 
                   Expanded(
-
                     child: Column(
-
-                      crossAxisAlignment:
-
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
 
                       children: [
-
                         Text(
-
                           'Subscription',
 
                           style: TextStyle(
-
-                            color: theme
-
-                                .colorScheme
-
-                                .onSurface,
+                            color: theme.colorScheme.onSurface,
 
                             fontSize: 14,
 
-                            fontWeight:
-
-                                FontWeight.w600,
-
+                            fontWeight: FontWeight.w600,
                           ),
-
                         ),
 
-                        const SizedBox(
-
-                          height: 3,
-
-                        ),
+                        const SizedBox(height: 3),
 
                         Text(
-
                           'Manage your SONEXA plan',
 
                           style: TextStyle(
-
-                            color: theme
-
-                                .colorScheme
-
-                                .onSurface
-
-                                .withValues(
-
+                            color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.45,
-
                             ),
 
                             fontSize: 11.5,
-
                           ),
-
                         ),
-
                       ],
-
                     ),
-
                   ),
 
                   Icon(
-
                     Icons.chevron_right_rounded,
 
-                    color: theme
-
-                        .colorScheme
-
-                        .onSurface
-
-                        .withValues(
-
-                      alpha: 0.32,
-
-                    ),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.32),
 
                     size: 23,
-
                   ),
-
                 ],
-
               ),
-
             ),
-
           ),
-
         ],
-
       ),
-
     );
-
   }
-
 }
 
 // =============================================================================
@@ -2531,59 +1469,30 @@ class _AccountGroup extends StatelessWidget {
 // =============================================================================
 
 class _GroupedCard extends StatelessWidget {
-
   final List<Widget> children;
 
-  const _GroupedCard({
-
-    required this.children,
-
-  });
+  const _GroupedCard({required this.children});
 
   @override
-
   Widget build(BuildContext context) {
-
-    final ThemeData theme =
-
-        Theme.of(context);
+    final ThemeData theme = Theme.of(context);
 
     return Container(
-
       clipBehavior: Clip.antiAlias,
 
       decoration: BoxDecoration(
-
         color: theme.colorScheme.surface,
 
-        borderRadius:
-
-            BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20),
 
         border: Border.all(
-
-          color:
-
-              theme.colorScheme.onSurface.withValues(
-
-            alpha: 0.07,
-
-          ),
-
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.07),
         ),
-
       ),
 
-      child: Column(
-
-        children: children,
-
-      ),
-
+      child: Column(children: children),
     );
-
   }
-
 }
 
 // =============================================================================
@@ -2592,10 +1501,7 @@ class _GroupedCard extends StatelessWidget {
 
 // =============================================================================
 
-class _GroupedSettingsItem
-
-    extends StatelessWidget {
-
+class _GroupedSettingsItem extends StatelessWidget {
   final IconData icon;
 
   final String title;
@@ -2605,7 +1511,6 @@ class _GroupedSettingsItem
   final VoidCallback onTap;
 
   const _GroupedSettingsItem({
-
     required this.icon,
 
     required this.title,
@@ -2613,175 +1518,84 @@ class _GroupedSettingsItem
     required this.subtitle,
 
     required this.onTap,
-
   });
 
   @override
-
   Widget build(BuildContext context) {
-
-    final ThemeData theme =
-
-        Theme.of(context);
+    final ThemeData theme = Theme.of(context);
 
     return Material(
-
       color: Colors.transparent,
 
       child: InkWell(
-
         onTap: onTap,
 
         child: Padding(
-
-          padding:
-
-              const EdgeInsets.fromLTRB(
-
-            16,
-
-            14,
-
-            14,
-
-            14,
-
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
 
           child: Row(
-
             children: [
+              _IconBox(icon: icon),
 
-              _IconBox(
-
-                icon: icon,
-
-              ),
-
-              const SizedBox(
-
-                width: 14,
-
-              ),
+              const SizedBox(width: 14),
 
               Expanded(
-
                 child: Column(
-
-                  crossAxisAlignment:
-
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-
                     Text(
-
                       title,
 
                       maxLines: 1,
 
-                      overflow:
-
-                          TextOverflow.ellipsis,
+                      overflow: TextOverflow.ellipsis,
 
                       style: TextStyle(
-
-                        color: theme
-
-                            .colorScheme
-
-                            .onSurface,
+                        color: theme.colorScheme.onSurface,
 
                         fontSize: 14.5,
 
-                        fontWeight:
-
-                            FontWeight.w600,
-
+                        fontWeight: FontWeight.w600,
                       ),
-
                     ),
 
-                    const SizedBox(
-
-                      height: 4,
-
-                    ),
+                    const SizedBox(height: 4),
 
                     Text(
-
                       subtitle,
 
                       maxLines: 1,
 
-                      overflow:
-
-                          TextOverflow.ellipsis,
+                      overflow: TextOverflow.ellipsis,
 
                       style: TextStyle(
-
-                        color: theme
-
-                            .colorScheme
-
-                            .onSurface
-
-                            .withValues(
-
+                        color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.48,
-
                         ),
 
                         fontSize: 11.5,
-
                       ),
-
                     ),
-
                   ],
-
                 ),
-
               ),
 
-              const SizedBox(
-
-                width: 8,
-
-              ),
+              const SizedBox(width: 8),
 
               Icon(
-
                 Icons.chevron_right_rounded,
 
-                color: theme
-
-                    .colorScheme
-
-                    .onSurface
-
-                    .withValues(
-
-                  alpha: 0.32,
-
-                ),
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.32),
 
                 size: 23,
-
               ),
-
             ],
-
           ),
-
         ),
-
       ),
-
     );
-
   }
-
 }
 
 // =============================================================================
@@ -2790,10 +1604,7 @@ class _GroupedSettingsItem
 
 // =============================================================================
 
-class _GroupedSwitchItem
-
-    extends StatelessWidget {
-
+class _GroupedSwitchItem extends StatelessWidget {
   final IconData icon;
 
   final String title;
@@ -2805,7 +1616,6 @@ class _GroupedSwitchItem
   final ValueChanged<bool> onChanged;
 
   const _GroupedSwitchItem({
-
     required this.icon,
 
     required this.title,
@@ -2815,175 +1625,84 @@ class _GroupedSwitchItem
     required this.value,
 
     required this.onChanged,
-
   });
 
   @override
-
   Widget build(BuildContext context) {
-
-    final ThemeData theme =
-
-        Theme.of(context);
+    final ThemeData theme = Theme.of(context);
 
     return Padding(
-
-      padding:
-
-          const EdgeInsets.fromLTRB(
-
-        16,
-
-        12,
-
-        12,
-
-        12,
-
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
 
       child: Row(
-
         children: [
+          _IconBox(icon: icon),
 
-          _IconBox(
-
-            icon: icon,
-
-          ),
-
-          const SizedBox(
-
-            width: 14,
-
-          ),
+          const SizedBox(width: 14),
 
           Expanded(
-
             child: Column(
-
-              crossAxisAlignment:
-
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-
                 Text(
-
                   title,
 
                   maxLines: 1,
 
-                  overflow:
-
-                      TextOverflow.ellipsis,
+                  overflow: TextOverflow.ellipsis,
 
                   style: TextStyle(
-
-                    color: theme
-
-                        .colorScheme
-
-                        .onSurface,
+                    color: theme.colorScheme.onSurface,
 
                     fontSize: 14.5,
 
-                    fontWeight:
-
-                        FontWeight.w600,
-
+                    fontWeight: FontWeight.w600,
                   ),
-
                 ),
 
-                const SizedBox(
-
-                  height: 4,
-
-                ),
+                const SizedBox(height: 4),
 
                 Text(
-
                   subtitle,
 
                   maxLines: 1,
 
-                  overflow:
-
-                      TextOverflow.ellipsis,
+                  overflow: TextOverflow.ellipsis,
 
                   style: TextStyle(
-
-                    color: theme
-
-                        .colorScheme
-
-                        .onSurface
-
-                        .withValues(
-
-                      alpha: 0.48,
-
-                    ),
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.48),
 
                     fontSize: 11.5,
-
                   ),
-
                 ),
-
               ],
-
             ),
-
           ),
 
-          const SizedBox(
-
-            width: 5,
-
-          ),
+          const SizedBox(width: 5),
 
           Switch(
-
             value: value,
 
             onChanged: onChanged,
 
             activeThumbColor: Colors.white,
 
-            activeTrackColor:
-
-                _SettingsScreenState._purple,
+            activeTrackColor: _SettingsScreenState._purple,
 
             inactiveThumbColor: Colors.white,
 
-            inactiveTrackColor: theme
-
-                .colorScheme
-
-                .onSurface
-
-                .withValues(
-
+            inactiveTrackColor: theme.colorScheme.onSurface.withValues(
               alpha: 0.15,
-
             ),
 
-            materialTapTargetSize:
-
-                MaterialTapTargetSize.shrinkWrap,
-
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
-
         ],
-
       ),
-
     );
-
   }
-
 }
 
 // =============================================================================
@@ -2992,22 +1711,14 @@ class _GroupedSwitchItem
 
 // =============================================================================
 
-class _GroupedDivider
-
-    extends StatelessWidget {
-
+class _GroupedDivider extends StatelessWidget {
   const _GroupedDivider();
 
   @override
-
   Widget build(BuildContext context) {
-
-    final ThemeData theme =
-
-        Theme.of(context);
+    final ThemeData theme = Theme.of(context);
 
     return Divider(
-
       height: 1,
 
       thickness: 1,
@@ -3016,22 +1727,9 @@ class _GroupedDivider
 
       endIndent: 16,
 
-      color: theme
-
-          .colorScheme
-
-          .onSurface
-
-          .withValues(
-
-        alpha: 0.065,
-
-      ),
-
+      color: theme.colorScheme.onSurface.withValues(alpha: 0.065),
     );
-
   }
-
 }
 
 // =============================================================================
@@ -3041,59 +1739,28 @@ class _GroupedDivider
 // =============================================================================
 
 class _IconBox extends StatelessWidget {
-
   final IconData icon;
 
   final double size;
 
-  const _IconBox({
-
-    required this.icon,
-
-    this.size = 42,
-
-  });
+  const _IconBox({required this.icon, this.size = 42});
 
   @override
-
   Widget build(BuildContext context) {
-
     return Container(
-
       width: size,
 
       height: size,
 
       decoration: BoxDecoration(
+        color: const Color(0xFF913CFF).withValues(alpha: 0.10),
 
-        color: const Color(0xFF913CFF)
-
-            .withValues(
-
-          alpha: 0.10,
-
-        ),
-
-        borderRadius:
-
-            BorderRadius.circular(13),
-
+        borderRadius: BorderRadius.circular(13),
       ),
 
-      child: Icon(
-
-        icon,
-
-        color: const Color(0xFF913CFF),
-
-        size: size * 0.5,
-
-      ),
-
+      child: Icon(icon, color: const Color(0xFF913CFF), size: size * 0.5),
     );
-
   }
-
 }
 
 // =============================================================================
@@ -3103,49 +1770,24 @@ class _IconBox extends StatelessWidget {
 // =============================================================================
 
 class _SheetHandle extends StatelessWidget {
-
   final ThemeData theme;
 
-  const _SheetHandle({
-
-    required this.theme,
-
-  });
+  const _SheetHandle({required this.theme});
 
   @override
-
   Widget build(BuildContext context) {
-
     return Container(
-
       width: 42,
 
       height: 4,
 
       decoration: BoxDecoration(
+        color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
 
-        color: theme
-
-            .colorScheme
-
-            .onSurface
-
-            .withValues(
-
-          alpha: 0.2,
-
-        ),
-
-        borderRadius:
-
-            BorderRadius.circular(20),
-
+        borderRadius: BorderRadius.circular(20),
       ),
-
     );
-
   }
-
 }
 
 // =============================================================================
@@ -3155,117 +1797,92 @@ class _SheetHandle extends StatelessWidget {
 // =============================================================================
 
 class _LogoutButton extends StatelessWidget {
-
   final VoidCallback onTap;
 
-  const _LogoutButton({
-
-    required this.onTap,
-
-  });
+  const _LogoutButton({required this.onTap});
 
   @override
-
   Widget build(BuildContext context) {
-
     return InkWell(
-
       onTap: onTap,
 
-      borderRadius:
-
-          BorderRadius.circular(18),
+      borderRadius: BorderRadius.circular(18),
 
       child: Container(
-
         width: double.infinity,
 
-        padding:
-
-            const EdgeInsets.symmetric(
-
-          vertical: 15,
-
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 15),
 
         decoration: BoxDecoration(
+          color: const Color(0xFF913CFF).withValues(alpha: 0.08),
 
-          color: const Color(0xFF913CFF)
-
-              .withValues(
-
-            alpha: 0.08,
-
-          ),
-
-          borderRadius:
-
-              BorderRadius.circular(18),
+          borderRadius: BorderRadius.circular(18),
 
           border: Border.all(
-
-            color: const Color(0xFF913CFF)
-
-                .withValues(
-
-              alpha: 0.18,
-
-            ),
-
+            color: const Color(0xFF913CFF).withValues(alpha: 0.18),
           ),
-
         ),
 
         child: const Row(
-
-          mainAxisAlignment:
-
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
 
           children: [
+            Icon(Icons.logout_rounded, color: Color(0xFF913CFF), size: 19),
 
-            Icon(
-
-              Icons.logout_rounded,
-
-              color: Color(0xFF913CFF),
-
-              size: 19,
-
-            ),
-
-            SizedBox(
-
-              width: 8,
-
-            ),
+            SizedBox(width: 8),
 
             Text(
-
               'Log out',
 
               style: TextStyle(
-
                 color: Color(0xFF913CFF),
 
                 fontSize: 13.5,
 
-                fontWeight:
-
-                    FontWeight.w700,
-
+                fontWeight: FontWeight.w700,
               ),
-
             ),
-
           ],
-
         ),
-
       ),
-
     );
+  }
+}
 
+
+// =============================================================================
+// CONTROLLED SETTINGS SCROLL PHYSICS
+// =============================================================================
+
+/// Keeps Settings scrolling smooth and responsive, without elastic edge bounce.
+/// The moderate friction lets a swipe travel naturally without feeling sluggish.
+class ControlledSettingsScrollPhysics extends ClampingScrollPhysics {
+  const ControlledSettingsScrollPhysics({super.parent});
+
+  @override
+  ControlledSettingsScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return ControlledSettingsScrollPhysics(parent: buildParent(ancestor));
   }
 
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
+        (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+
+    if (velocity.abs() < toleranceFor(position).velocity) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+
+    return ClampingScrollSimulation(
+      position: position.pixels,
+      velocity: velocity,
+      friction: 0.028,
+      tolerance: toleranceFor(position),
+    );
+  }
 }

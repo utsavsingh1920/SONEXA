@@ -37,6 +37,7 @@ dependencies:
   # Permissions
   permission_handler: ^12.0.3
   http: ^1.6.0
+  connectivity_plus: ^7.3.2
 
 dev_dependencies:
   flutter_test:
@@ -49,7 +50,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-
+  
   assets:
     - assets/images/sonexa_logo.png
     - assets/images/hero.logo.png
@@ -57,7 +58,7 @@ flutter:
     - assets/images/headphone_hero.png
     - assets/images/google_logo.png
     - assets/images/apple_logo.png
-
+    - assets/images/greeting/
     - assets/images/artists/arijit_singh.jpg
     - assets/images/artists/rahat_fateh_ali_khan.jpg
     - assets/images/artists/mohit_chauhan.jpg

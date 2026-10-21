@@ -1087,7 +1087,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
     final double keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
-    final double bottomPadding = keyboardHeight > 0 ? keyboardHeight + 24 : 140;
+    final double bottomPadding = keyboardHeight > 0 ? keyboardHeight + 24 : 16;
 
     return PopScope(
       canPop: !_hasQuery && !_isFocused,
@@ -1141,7 +1141,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 child: ListView(
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ControlledSearchScrollPhysics(),
                   padding: EdgeInsets.fromLTRB(8, 10, 8, bottomPadding),
                   children: [
                     // ==================================================
@@ -1188,7 +1188,9 @@ class _SearchScreenState extends State<SearchScreen> {
                               borderRadius: BorderRadius.circular(20),
                               child: Container(
                                 alignment: Alignment.center,
-                                padding: const EdgeInsets.symmetric(horizontal: 11),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 11,
+                                ),
                                 decoration: BoxDecoration(
                                   color: isDark
                                       ? const Color(0xFF151020)
@@ -1490,8 +1492,8 @@ class _SearchBox extends StatelessWidget {
     final Color outlineColor = isFocused
         ? const Color(0xFFC575FF)
         : theme.brightness == Brightness.dark
-            ? const Color(0xFF5A426F)
-            : theme.colorScheme.onSurface.withValues(alpha: 0.34);
+        ? const Color(0xFF5A426F)
+        : theme.colorScheme.onSurface.withValues(alpha: 0.34);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 220),
@@ -2771,6 +2773,41 @@ class _NoSearchResults extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Keeps Search scrolling responsive and smooth while avoiding
+/// elastic bounce at the top and bottom edges.
+class ControlledSearchScrollPhysics extends ClampingScrollPhysics {
+  const ControlledSearchScrollPhysics({super.parent});
+
+  @override
+  ControlledSearchScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return ControlledSearchScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
+        (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+
+    if (velocity.abs() < toleranceFor(position).velocity) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+
+    // Moderate friction lets quick swipes travel a little farther while
+    // keeping the scroll controlled instead of allowing runaway flings.
+    return ClampingScrollSimulation(
+      position: position.pixels,
+      velocity: velocity,
+      friction: 0.028,
+      tolerance: toleranceFor(position),
     );
   }
 }

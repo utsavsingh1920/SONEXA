@@ -264,7 +264,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             // ====================================================
             Expanded(
               child: CustomScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 slivers: [
                   // ====================================================
                   // FILTERS
@@ -366,7 +366,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                   // ====================================================
                   // SPACE FOR MINI PLAYER + BOTTOM NAV
                   // ====================================================
-                  const SliverToBoxAdapter(child: SizedBox(height: 140)),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
                 ],
               ),
             ),
@@ -625,27 +625,43 @@ class _LibraryScreenState extends State<LibraryScreen> {
         Row(
           children: [
             Expanded(
-              child: Text('Playlists', style: TextStyle(
-                color: _text(context), fontSize: 20,
-                fontWeight: FontWeight.w800,
-              )),
+              child: Text(
+                'Playlists',
+                style: TextStyle(
+                  color: _text(context),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
             InkWell(
               onTap: () => _showCreatePlaylistDialog(context, player),
               borderRadius: BorderRadius.circular(12),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 13,
+                  vertical: 9,
+                ),
                 decoration: BoxDecoration(
                   color: purple.withValues(alpha: 0.16),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: purple.withValues(alpha: .30)),
                 ),
-                child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                  Icon(Icons.add_rounded, color: Color(0xFFC575FF), size: 18),
-                  SizedBox(width: 5),
-                  Text('Create', style: TextStyle(color: Color(0xFFC575FF),
-                      fontSize: 12, fontWeight: FontWeight.w700)),
-                ]),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, color: Color(0xFFC575FF), size: 18),
+                    SizedBox(width: 5),
+                    Text(
+                      'Create',
+                      style: TextStyle(
+                        color: Color(0xFFC575FF),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -659,12 +675,13 @@ class _LibraryScreenState extends State<LibraryScreen> {
             physics: const NeverScrollableScrollPhysics(),
             itemCount: playlistNames.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3, crossAxisSpacing: 10,
-              mainAxisSpacing: 12, childAspectRatio: .72,
+              crossAxisCount: 3,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 12,
+              childAspectRatio: .72,
             ),
-            itemBuilder: (context, index) => _playlistCard(
-              context, player, playlistNames[index],
-            ),
+            itemBuilder: (context, index) =>
+                _playlistCard(context, player, playlistNames[index]),
           )
         else
           SizedBox(
@@ -674,9 +691,8 @@ class _LibraryScreenState extends State<LibraryScreen> {
               physics: const BouncingScrollPhysics(),
               itemCount: playlistNames.length,
               separatorBuilder: (_, _) => const SizedBox(width: 11),
-              itemBuilder: (context, index) => _playlistCard(
-                context, player, playlistNames[index],
-              ),
+              itemBuilder: (context, index) =>
+                  _playlistCard(context, player, playlistNames[index]),
             ),
           ),
       ],

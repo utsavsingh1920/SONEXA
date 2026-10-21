@@ -1,6 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 import '../data/songs_data.dart';
 import '../models/song_model.dart';
@@ -22,21 +25,25 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen>
     with SingleTickerProviderStateMixin {
-  late final PageController _heroController;
   late final AnimationController _equalizerController;
 
-  Timer? _heroTimer;
   Timer? _greetingTimer;
+  Timer? _networkRetryTimer;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   int _lastGreetingHour = DateTime.now().hour;
+  bool _hasNetworkConnection = true;
+  bool _isRetryingNetwork = false;
+  bool _hasLoadedSongCache = false;
+
+  static const String _indianSongsCacheKey = 'sonexa_home_indian_songs_v1';
+  static const String _fullSongsCacheKey = 'sonexa_home_full_songs_v1';
+  static const String _audiusSongsCacheKey = 'sonexa_home_audius_songs_v1';
 
   List<SongModel> _indianSongs = const <SongModel>[];
   List<SongModel> _fullSongs = const <SongModel>[];
   List<SongModel> _audiusSongs = const <SongModel>[];
   bool _isLoadingHomeSongs = true;
   String? _homeSongsError;
-
-  static const int _heroInitialPage = 999;
-  static const int _heroCount = 3;
 
   final List<String> _madeForYouCategories = [
     'Chill Vibes',
@@ -141,24 +148,185 @@ class _HomeScreenState extends State<HomeScreen>
       }
     });
 
-    _heroController = PageController(initialPage: _heroInitialPage);
-
     _equalizerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 700),
     );
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _startHeroTimer();
-      _loadHomeSongs();
+      _startConnectivityMonitoring();
     });
   }
 
-  Future<void> _loadHomeSongs({bool forceRefresh = false}) async {
+  Future<void> _startConnectivityMonitoring() async {
+    // Restore the last successful feed before checking the network. This keeps
+    // the Home screen populated after a full app restart while offline.
+    await _loadCachedHomeSongs();
+
+    // Check the current connection first, then listen for changes.
+    try {
+      final results = await Connectivity().checkConnectivity();
+      if (!mounted) return;
+      _handleConnectivityChange(results, initialCheck: true);
+
+      _connectivitySubscription = Connectivity().onConnectivityChanged.listen(
+        (results) => _handleConnectivityChange(results),
+        onError: (_) {
+          // Keep the Home screen usable even if the OS connectivity stream fails.
+        },
+      );
+    } catch (_) {
+      // Connectivity monitoring is a convenience; manual refresh still works.
+      _loadHomeSongs();
+    }
+  }
+
+  void _handleConnectivityChange(
+    List<ConnectivityResult> results, {
+    bool initialCheck = false,
+  }) {
     if (!mounted) return;
 
+    final bool connected = results.any(
+      (result) => result != ConnectivityResult.none,
+    );
+    final bool wasConnected = _hasNetworkConnection;
+
     setState(() {
-      _isLoadingHomeSongs = true;
+      _hasNetworkConnection = connected;
+      if (!connected) {
+        _isLoadingHomeSongs = false;
+        _homeSongsError = 'No internet connection.';
+      } else if (!wasConnected || initialCheck) {
+        _homeSongsError = null;
+      }
+    });
+
+    if (connected && (!wasConnected || initialCheck)) {
+      _networkRetryTimer?.cancel();
+      _loadHomeSongs();
+    } else if (!connected) {
+      _scheduleNetworkRetry();
+    }
+  }
+
+  void _scheduleNetworkRetry() {
+    _networkRetryTimer?.cancel();
+    _networkRetryTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) {
+        _networkRetryTimer?.cancel();
+        return;
+      }
+      if (_hasNetworkConnection &&
+          _homeSongsError != null &&
+          !_isRetryingNetwork) {
+        _loadHomeSongs();
+      }
+    });
+  }
+
+  Future<void> _loadCachedHomeSongs() async {
+    if (_hasLoadedSongCache) return;
+
+    try {
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      List<SongModel> decodeSongs(String key) {
+        final String? raw = preferences.getString(key);
+        if (raw == null || raw.isEmpty) return <SongModel>[];
+
+        try {
+          final dynamic decoded = jsonDecode(raw);
+          if (decoded is! List) return <SongModel>[];
+          return decoded
+              .whereType<Map>()
+              .map(
+                (item) => SongModel.fromJson(Map<String, dynamic>.from(item)),
+              )
+              .toList();
+        } catch (_) {
+          return <SongModel>[];
+        }
+      }
+
+      final List<SongModel> indian = decodeSongs(_indianSongsCacheKey);
+      final List<SongModel> full = decodeSongs(_fullSongsCacheKey);
+      final List<SongModel> audius = decodeSongs(_audiusSongsCacheKey);
+      debugPrint(
+        '[SONEXA CACHE] Loaded: iTunes=${indian.length}, Jamendo=${full.length}, Audius=${audius.length}',
+      );
+
+      if (!mounted) return;
+      setState(() {
+        if (indian.isNotEmpty) _indianSongs = indian;
+        if (full.isNotEmpty) _fullSongs = full;
+        if (audius.isNotEmpty) _audiusSongs = audius;
+        _isLoadingHomeSongs = false;
+        _hasLoadedSongCache = true;
+      });
+    } catch (error, stackTrace) {
+      debugPrint('[SONEXA CACHE] Load failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        setState(() {
+          _isLoadingHomeSongs = false;
+          _hasLoadedSongCache = true;
+        });
+      } else {
+        _hasLoadedSongCache = true;
+      }
+    }
+  }
+
+  Future<void> _saveCachedHomeSongs({
+    required List<SongModel> indian,
+    required List<SongModel> full,
+    required List<SongModel> audius,
+  }) async {
+    try {
+      final SharedPreferences preferences =
+          await SharedPreferences.getInstance();
+      Future<void> saveSongs(String key, List<SongModel> songs) async {
+        if (songs.isEmpty) return;
+        final String encoded = jsonEncode(
+          songs.map((song) => song.toJson()).toList(),
+        );
+        final bool saved = await preferences.setString(key, encoded);
+        debugPrint(
+          '[SONEXA CACHE] Saved $key: ${songs.length} songs (success=$saved)',
+        );
+      }
+
+      await Future.wait<void>([
+        saveSongs(_indianSongsCacheKey, indian),
+        saveSongs(_fullSongsCacheKey, full),
+        saveSongs(_audiusSongsCacheKey, audius),
+      ]);
+    } catch (error, stackTrace) {
+      debugPrint('[SONEXA CACHE] Save failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      // Cache failure should never prevent the Home screen from working.
+    }
+  }
+
+  Future<void> _loadHomeSongs({bool forceRefresh = false}) async {
+    if (!mounted || _isRetryingNetwork) return;
+
+    if (!_hasNetworkConnection) {
+      setState(() {
+        _isLoadingHomeSongs = false;
+        _homeSongsError = 'No internet connection.';
+      });
+      return;
+    }
+
+    _isRetryingNetwork = true;
+    final bool hasCachedFeed =
+        _indianSongs.isNotEmpty ||
+        _fullSongs.isNotEmpty ||
+        _audiusSongs.isNotEmpty;
+    setState(() {
+      _isLoadingHomeSongs = !hasCachedFeed;
       _homeSongsError = null;
     });
 
@@ -168,28 +336,70 @@ class _HomeScreenState extends State<HomeScreen>
     }
 
     try {
-      final List<List<SongModel>> results = await Future.wait([
-        ITunesApiService.instance.searchSongs('Bollywood hits', limit: 25),
-        JamendoApiService.instance.getPopularTracks(limit: 25),
-        AudiusApiService.instance.getTrendingTracks(limit: 25),
+      // A single API failure should not hide songs returned by the other APIs.
+      final results = await Future.wait<List<SongModel>>([
+        ITunesApiService.instance
+            .searchSongs('Bollywood hits', limit: 25)
+            .catchError((_) => <SongModel>[]),
+        JamendoApiService.instance
+            .getPopularTracks(limit: 25)
+            .catchError((_) => <SongModel>[]),
+        AudiusApiService.instance
+            .getTrendingTracks(limit: 25)
+            .catchError((_) => <SongModel>[]),
       ]);
 
       if (!mounted) return;
 
+      debugPrint(
+        '[SONEXA API] Results: iTunes=${results[0].length}, Jamendo=${results[1].length}, Audius=${results[2].length}',
+      );
+      final bool receivedAnySongs = results.any((songs) => songs.isNotEmpty);
       setState(() {
-        _indianSongs = results[0];
-        _fullSongs = results[1];
-        _audiusSongs = results[2];
+        // Preserve the last successful feed if a request returns no results.
+        if (results[0].isNotEmpty) _indianSongs = results[0];
+        if (results[1].isNotEmpty) _fullSongs = results[1];
+        if (results[2].isNotEmpty) _audiusSongs = results[2];
         _isLoadingHomeSongs = false;
+        _homeSongsError = receivedAnySongs
+            ? null
+            : 'Online music could not be loaded. Tap Retry.';
       });
-    } catch (error) {
-      if (!mounted) return;
 
+      if (receivedAnySongs) {
+        await _saveCachedHomeSongs(
+          indian: results[0].isNotEmpty ? results[0] : _indianSongs,
+          full: results[1].isNotEmpty ? results[1] : _fullSongs,
+          audius: results[2].isNotEmpty ? results[2] : _audiusSongs,
+        );
+        _networkRetryTimer?.cancel();
+      } else {
+        _scheduleNetworkRetry();
+      }
+    } catch (error, stackTrace) {
+      debugPrint('[SONEXA API] Home feed failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
       setState(() {
         _isLoadingHomeSongs = false;
-        _homeSongsError = 'Online music could not be loaded.';
+        _homeSongsError = 'Online music could not be loaded. Tap Retry.';
       });
+      _scheduleNetworkRetry();
+    } finally {
+      _isRetryingNetwork = false;
     }
+  }
+
+  String get _greetingArtworkPath {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return 'assets/images/greeting/morning.png';
+    } else if (hour >= 12 && hour < 17) {
+      return 'assets/images/greeting/afternoon.png';
+    } else if (hour >= 17 && hour < 21) {
+      return 'assets/images/greeting/evening.png';
+    }
+    return 'assets/images/greeting/night.png';
   }
 
   List<SongModel> get _homeSongs {
@@ -207,30 +417,11 @@ class _HomeScreenState extends State<HomeScreen>
     }).toList();
   }
 
-  void _startHeroTimer() {
-    _heroTimer?.cancel();
-
-    _heroTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted || !_heroController.hasClients) {
-        return;
-      }
-
-      if (_heroController.position.isScrollingNotifier.value) {
-        return;
-      }
-
-      _heroController.nextPage(
-        duration: const Duration(milliseconds: 600),
-        curve: Curves.easeInOut,
-      );
-    });
-  }
-
   @override
   void dispose() {
-    _heroTimer?.cancel();
     _greetingTimer?.cancel();
-    _heroController.dispose();
+    _networkRetryTimer?.cancel();
+    _connectivitySubscription?.cancel();
     _equalizerController.dispose();
     super.dispose();
   }
@@ -619,10 +810,12 @@ class _HomeScreenState extends State<HomeScreen>
                 const SizedBox(height: 14),
                 Expanded(
                   child: CustomScrollView(
-                    physics: const BouncingScrollPhysics(),
+                    // Controlled vertical scrolling: reduce fling distance
+                    // and prevent the elastic bounce at the scroll edges.
+                    physics: const ControlledHomeScrollPhysics(),
                     slivers: [
                       SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 156),
+                        padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
                         sliver: SliverList(
                           delegate: SliverChildListDelegate([
                             _buildHero(context),
@@ -904,7 +1097,7 @@ class _HomeScreenState extends State<HomeScreen>
     Color primaryText,
     Color secondaryText,
   ) {
-    if (_isLoadingHomeSongs) {
+    if (_isLoadingHomeSongs && _hasNetworkConnection) {
       return Container(
         height: 48,
         padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -957,7 +1150,10 @@ class _HomeScreenState extends State<HomeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  _homeSongsError ?? 'Unable to update music.',
+                  _homeSongsError ??
+                      (_hasNetworkConnection
+                          ? 'Unable to update music.'
+                          : 'No internet connection.'),
                   style: TextStyle(
                     color: primaryText,
                     fontSize: 10.5,
@@ -966,7 +1162,7 @@ class _HomeScreenState extends State<HomeScreen>
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Showing downloaded songs for now.',
+                  'Your available songs and artwork stay visible.',
                   style: TextStyle(color: secondaryText, fontSize: 8.5),
                 ),
               ],
@@ -994,26 +1190,15 @@ class _HomeScreenState extends State<HomeScreen>
   ) {
     final hour = DateTime.now().hour;
 
-    String greeting;
-    IconData greetingIcon;
-    Color greetingIconColor;
-
+    final String greeting;
     if (hour >= 5 && hour < 12) {
       greeting = 'Good Morning';
-      greetingIcon = Icons.wb_twilight_rounded;
-      greetingIconColor = const Color(0xFFFFCA69);
     } else if (hour >= 12 && hour < 17) {
       greeting = 'Good Afternoon';
-      greetingIcon = Icons.wb_sunny_rounded;
-      greetingIconColor = const Color(0xFFFFB84D);
     } else if (hour >= 17 && hour < 21) {
       greeting = 'Good Evening';
-      greetingIcon = Icons.wb_twilight_rounded;
-      greetingIconColor = const Color(0xFFF7A2A9);
     } else {
       greeting = 'Good Night';
-      greetingIcon = Icons.nightlight_round;
-      greetingIconColor = const Color(0xFFA59CFF);
     }
 
     final Color notificationBackground = isDark
@@ -1068,9 +1253,7 @@ class _HomeScreenState extends State<HomeScreen>
               },
             ),
           ),
-
           const SizedBox(width: 10),
-
           Expanded(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1089,32 +1272,21 @@ class _HomeScreenState extends State<HomeScreen>
                   ),
                 ),
                 const SizedBox(height: 3),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Flexible(
-                      child: Text(
-                        greeting,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: secondaryText,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w500,
-                          height: 1.0,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 5),
-                    Icon(greetingIcon, size: 16, color: greetingIconColor),
-                  ],
+                Text(
+                  greeting,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: secondaryText,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                    height: 1.0,
+                  ),
                 ),
               ],
             ),
           ),
-
           const SizedBox(width: 10),
-
           GestureDetector(
             onTap: () {
               Navigator.of(context).push(
@@ -1146,87 +1318,40 @@ class _HomeScreenState extends State<HomeScreen>
   // ============================================================
 
   Widget _buildHero(BuildContext context) {
-    return SizedBox(
-      height: 184,
-      child: PageView.builder(
-        controller: _heroController,
-        itemBuilder: (context, index) {
-          final page = index % _heroCount;
+    // One hero banner only. Its artwork changes with the local time.
+    final String artworkPath = _greetingArtworkPath;
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 1),
-            child: _buildHeroCard(context, page),
-          );
-        },
-      ),
-    );
+    return SizedBox(height: 184, child: _buildHeroCard(context, artworkPath));
   }
 
-  Widget _buildHeroCard(BuildContext context, int page) {
+  Widget _buildHeroCard(BuildContext context, String artworkPath) {
     final theme = Theme.of(context);
-
     final bool isDark = theme.brightness == Brightness.dark;
+    final SongModel? song = _homeSongs.isNotEmpty ? _homeSongs.first : null;
 
     final Color heroTitleColor = isDark
         ? Colors.white
         : const Color(0xFF21152D);
-
     final Color heroSubtitleColor = isDark
         ? const Color(0xFFCEC0DA)
         : const Color(0xFF675A70);
-
     final Color heroLabelColor = isDark
-        ? const Color(0xFFC575FF)
+        ? const Color(0xFFD18AFF)
         : const Color(0xFF8145D2);
-
     final Color heroBorderColor = isDark
         ? const Color(0xFF5A327E)
         : const Color(0xFFD8C5E9);
 
-    final List<Map<String, dynamic>> data = [
-      {
-        'label': 'SONEXA MIX',
-        'title': 'Your music,\nyour moment.',
-        'subtitle': 'A personalized mix made for your listening mood.',
-        'image': 'assets/images/hero.logo.png',
-        'song': _homeSongs.isNotEmpty ? _homeSongs[0] : null,
-      },
-      {
-        'label': 'TRENDING TRACKS',
-        'title': 'What’s hot\nright now.',
-        'subtitle': 'Listen to the tracks everyone is loving right now.',
-        'image': 'assets/images/headphone_hero.png',
-        'song': _homeSongs.length > 1 ? _homeSongs[1] : null,
-      },
-      {
-        'label': 'STARGAZING ESSENTIALS',
-        'title': 'Music for\nlate nights.',
-        'subtitle': 'Slow down, relax and enjoy your favorite sounds.',
-        'image': 'assets/images/galaxy_hero.png',
-        'song': _homeSongs.length > 7 ? _homeSongs[7] : null,
-      },
-    ];
-
-    final item = data[page];
-
-    final SongModel? song = item['song'] as SongModel?;
-
     return GestureDetector(
       onTap: () {
-        if (song == null) return;
-
-        _playSong(context, song, openPlayer: true);
+        if (song != null) {
+          _playSong(context, song, openPlayer: true);
+        }
       },
       child: Container(
         decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1B102C) : const Color(0xFFF2E9F9),
           borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? const [Color(0xFF311852), Color(0xFF151020)]
-                : const [Color(0xFFEDE1FA), Color(0xFFF9F6FC)],
-          ),
           border: Border.all(color: heroBorderColor),
           boxShadow: [
             BoxShadow(
@@ -1239,58 +1364,56 @@ class _HomeScreenState extends State<HomeScreen>
         child: ClipRRect(
           borderRadius: BorderRadius.circular(20),
           child: Stack(
+            fit: StackFit.expand,
             children: [
+              // Artwork stays on the right so the headline remains readable.
               Positioned(
-                right: page == 1 ? -2 : -8,
-                top: page == 1 ? 8 : -8,
-                bottom: page == 1 ? 8 : -8,
-                child: Opacity(
-                  opacity: isDark ? 0.88 : 0.82,
-                  child: Image.asset(
-                    item['image'] as String,
-                    width: page == 1 ? 150 : 162,
-                    height: page == 1 ? 164 : 176,
-                    fit: page == 1 ? BoxFit.contain : BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ),
-              ),
-
-              Positioned(
-                right: -65,
-                top: -75,
-                child: Container(
-                  width: 170,
-                  height: 170,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: const Color(0xFF913CFF)
-                        .withValues(alpha: isDark ? 0.10 : 0.08),
-                  ),
-                ),
-              ),
-
-              Positioned(
-                left: 0,
+                right: 0,
                 top: 0,
                 bottom: 0,
-                width: 230,
-                child: Container(
+                width: 210,
+                child: Image.asset(
+                  artworkPath,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.center,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topRight,
+                          end: Alignment.bottomLeft,
+                          colors: [Color(0xFF792BDA), Color(0xFF1B102C)],
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.graphic_eq_rounded,
+                        color: Color(0xFFD18AFF),
+                        size: 52,
+                      ),
+                    );
+                  },
+                ),
+              ),
+
+              // Dark overlay on the left blends the art into the Sonexa theme.
+              Positioned.fill(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
+                      stops: const [0.0, 0.43, 0.72, 1.0],
                       colors: isDark
                           ? const [
                               Color(0xFF1B102C),
-                              Color(0xE61B102C),
+                              Color(0xF21B102C),
+                              Color(0x801B102C),
                               Color(0x001B102C),
                             ]
                           : const [
                               Color(0xFFF2E9F9),
-                              Color(0xE6F2E9F9),
+                              Color(0xF2F2E9F9),
+                              Color(0x80F2E9F9),
                               Color(0x00F2E9F9),
                             ],
                     ),
@@ -1299,12 +1422,12 @@ class _HomeScreenState extends State<HomeScreen>
               ),
 
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 13),
+                padding: const EdgeInsets.fromLTRB(16, 14, 12, 13),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      item['label'] as String,
+                      'SONEXA MIX',
                       style: TextStyle(
                         color: heroLabelColor,
                         fontSize: 8,
@@ -1312,11 +1435,9 @@ class _HomeScreenState extends State<HomeScreen>
                         letterSpacing: 1.4,
                       ),
                     ),
-
                     const SizedBox(height: 7),
-
                     Text(
-                      item['title'] as String,
+                      'Your music,\nyour moment.',
                       style: TextStyle(
                         color: heroTitleColor,
                         fontSize: 20,
@@ -1325,13 +1446,11 @@ class _HomeScreenState extends State<HomeScreen>
                         letterSpacing: -0.5,
                       ),
                     ),
-
                     const SizedBox(height: 7),
-
                     SizedBox(
                       width: 175,
                       child: Text(
-                        item['subtitle'] as String,
+                        'A personalized mix made for your listening mood.',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -1341,9 +1460,7 @@ class _HomeScreenState extends State<HomeScreen>
                         ),
                       ),
                     ),
-
                     const Spacer(),
-
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -3687,6 +3804,42 @@ class _EqualizerBars extends StatelessWidget {
         color: const Color(0xFFC575FF),
         borderRadius: BorderRadius.circular(5),
       ),
+    );
+  }
+}
+
+/// Keeps Home feed flings controlled but less abrupt, while preserving
+/// ordinary drag scrolling and preventing elastic edge bounce.
+class ControlledHomeScrollPhysics extends ClampingScrollPhysics {
+  const ControlledHomeScrollPhysics({super.parent});
+
+  @override
+  ControlledHomeScrollPhysics applyTo(ScrollPhysics? ancestor) {
+    return ControlledHomeScrollPhysics(parent: buildParent(ancestor));
+  }
+
+  @override
+  Simulation? createBallisticSimulation(
+    ScrollMetrics position,
+    double velocity,
+  ) {
+    // Let the normal physics handle out-of-range positions and tiny flings.
+    if ((velocity <= 0.0 && position.pixels <= position.minScrollExtent) ||
+        (velocity >= 0.0 && position.pixels >= position.maxScrollExtent)) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+
+    if (velocity.abs() < toleranceFor(position).velocity) {
+      return super.createBallisticSimulation(position, velocity);
+    }
+
+    // Moderate extra friction limits runaway flings without making scrolling
+    // feel overly short or abrupt.
+    return ClampingScrollSimulation(
+      position: position.pixels,
+      velocity: velocity,
+      friction: 0.022,
+      tolerance: toleranceFor(position),
     );
   }
 }
