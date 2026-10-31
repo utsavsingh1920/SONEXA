@@ -1,3 +1,5 @@
+import '../core/widgets/sonexa_network_image.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -2368,7 +2370,7 @@ class _SearchSongTile extends StatelessWidget {
                   child: song.imagePath.trim().isEmpty
                       ? _SongArtworkFallback(theme: theme)
                       : song.isNetwork
-                      ? Image.network(
+                      ? sonexaNetworkImage(
                           song.imagePath,
                           width: 53,
                           height: 53,

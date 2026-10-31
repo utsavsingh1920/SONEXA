@@ -6,8 +6,7 @@ import '../models/song_model.dart';
 class AudioPlayerService {
   AudioPlayerService._();
 
-  static final AudioPlayerService instance =
-      AudioPlayerService._();
+  static final AudioPlayerService instance = AudioPlayerService._();
 
   final AudioPlayer _player = AudioPlayer();
 
@@ -21,14 +20,11 @@ class AudioPlayerService {
   // STREAMS
   // ============================================================
 
-  Stream<PlayerState> get playerStateStream =>
-      _player.playerStateStream;
+  Stream<PlayerState> get playerStateStream => _player.playerStateStream;
 
-  Stream<Duration?> get durationStream =>
-      _player.durationStream;
+  Stream<Duration?> get durationStream => _player.durationStream;
 
-  Stream<Duration> get positionStream =>
-      _player.positionStream;
+  Stream<Duration> get positionStream => _player.positionStream;
 
   Stream<ProcessingState> get processingStateStream =>
       _player.processingStateStream;
@@ -50,26 +46,19 @@ class AudioPlayerService {
   Future<void> playSong(SongModel song) async {
     try {
       if (song.audioPath.isEmpty) {
-        debugPrint(
-          'Audio path is empty for: ${song.title}',
-        );
+        debugPrint('Audio path is empty for: ${song.title}');
         return;
       }
 
-      final AudioSource source =
-          AudioSource.asset(song.audioPath);
+      final AudioSource source = AudioSource.asset(song.audioPath);
 
       await _player.setAudioSource(source);
 
       await _player.play();
     } catch (e, stackTrace) {
-      debugPrint(
-        'Audio play error: $e',
-      );
+      debugPrint('Audio play error: $e');
 
-      debugPrint(
-        'Audio stack trace: $stackTrace',
-      );
+      debugPrint('Audio stack trace: $stackTrace');
     }
   }
 

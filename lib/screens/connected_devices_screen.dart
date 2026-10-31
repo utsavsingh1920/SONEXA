@@ -4,12 +4,10 @@ class ConnectedDevicesScreen extends StatefulWidget {
   const ConnectedDevicesScreen({super.key});
 
   @override
-  State<ConnectedDevicesScreen> createState() =>
-      _ConnectedDevicesScreenState();
+  State<ConnectedDevicesScreen> createState() => _ConnectedDevicesScreenState();
 }
 
-class _ConnectedDevicesScreenState
-    extends State<ConnectedDevicesScreen> {
+class _ConnectedDevicesScreenState extends State<ConnectedDevicesScreen> {
   static const Color _purple = Color(0xFF9B6BFF);
 
   final List<_Device> _devices = [
@@ -26,39 +24,27 @@ class _ConnectedDevicesScreenState
   }
 
   Color _background(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF080812)
-        : const Color(0xFFF7F5FA);
+    return _isDark(context) ? const Color(0xFF080812) : const Color(0xFFF7F5FA);
   }
 
   Color _card(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF11111D)
-        : Colors.white;
+    return _isDark(context) ? const Color(0xFF11111D) : Colors.white;
   }
 
   Color _primaryText(BuildContext context) {
-    return _isDark(context)
-        ? Colors.white
-        : const Color(0xFF18151D);
+    return _isDark(context) ? Colors.white : const Color(0xFF18151D);
   }
 
   Color _secondaryText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFFAAA6B5)
-        : const Color(0xFF6F6878);
+    return _isDark(context) ? const Color(0xFFAAA6B5) : const Color(0xFF6F6878);
   }
 
   Color _mutedText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF85818F)
-        : const Color(0xFF7A7483);
+    return _isDark(context) ? const Color(0xFF85818F) : const Color(0xFF7A7483);
   }
 
   Color _sectionText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF8E8A9A)
-        : const Color(0xFF6F6878);
+    return _isDark(context) ? const Color(0xFF8E8A9A) : const Color(0xFF6F6878);
   }
 
   Color _border(BuildContext context) {
@@ -92,10 +78,7 @@ class _ConnectedDevicesScreenState
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_rounded,
-            color: _primaryText(context),
-          ),
+          icon: Icon(Icons.arrow_back_rounded, color: _primaryText(context)),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -114,9 +97,7 @@ class _ConnectedDevicesScreenState
             decoration: BoxDecoration(
               color: _infoBackground(context),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: _infoBorder(context),
-              ),
+              border: Border.all(color: _infoBorder(context)),
             ),
             child: Row(
               children: [
@@ -154,12 +135,7 @@ class _ConnectedDevicesScreenState
 
           const SizedBox(height: 12),
 
-          ..._devices.map(
-            (device) => _deviceTile(
-              context,
-              device,
-            ),
-          ),
+          ..._devices.map((device) => _deviceTile(context, device)),
 
           const SizedBox(height: 14),
 
@@ -174,9 +150,7 @@ class _ConnectedDevicesScreenState
                   color: _card(context),
                   borderRadius: BorderRadius.circular(18),
                   border: Border.all(
-                    color: theme.colorScheme.primary.withValues(
-                      alpha: 0.25,
-                    ),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.25),
                   ),
                 ),
                 child: Row(
@@ -198,8 +172,7 @@ class _ConnectedDevicesScreenState
 
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'Connect a device',
@@ -258,10 +231,7 @@ class _ConnectedDevicesScreenState
     );
   }
 
-  Widget _deviceTile(
-    BuildContext context,
-    _Device device,
-  ) {
+  Widget _deviceTile(BuildContext context, _Device device) {
     final ThemeData theme = Theme.of(context);
 
     return Container(
@@ -321,8 +291,9 @@ class _ConnectedDevicesScreenState
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary
-                              .withValues(alpha: 0.14),
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.14,
+                          ),
                           borderRadius: BorderRadius.circular(7),
                         ),
                         child: Text(
@@ -342,10 +313,7 @@ class _ConnectedDevicesScreenState
 
                 Text(
                   device.type,
-                  style: TextStyle(
-                    color: _mutedText(context),
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: _mutedText(context), fontSize: 12),
                 ),
               ],
             ),
@@ -354,10 +322,7 @@ class _ConnectedDevicesScreenState
           if (!device.current)
             IconButton(
               onPressed: () => _removeDevice(device),
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: _mutedText(context),
-              ),
+              icon: Icon(Icons.more_vert_rounded, color: _mutedText(context)),
             ),
         ],
       ),
@@ -371,9 +336,7 @@ class _ConnectedDevicesScreenState
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text(
-          'Device connection will be available soon',
-        ),
+        content: const Text('Device connection will be available soon'),
         backgroundColor: dark
             ? const Color(0xFF21182C)
             : const Color(0xFF6D3DB8),

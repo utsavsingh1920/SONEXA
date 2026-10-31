@@ -1,3 +1,5 @@
+import '../core/widgets/sonexa_network_image.dart';
+
 import 'package:flutter/material.dart';
 
 import '../player/player_scope.dart';
@@ -17,9 +19,7 @@ class MiniPlayer extends StatelessWidget {
     final background = isDark
         ? const Color(0xFF151020)
         : const Color(0xFFFFFFFF);
-    final border = isDark
-        ? const Color(0xFF30243F)
-        : const Color(0xFFE8DDF1);
+    final border = isDark ? const Color(0xFF30243F) : const Color(0xFFE8DDF1);
     final primaryText = isDark
         ? const Color(0xFFF7F4FC)
         : const Color(0xFF17131D);
@@ -41,17 +41,14 @@ class MiniPlayer extends StatelessWidget {
 
         final durationMs = player.duration.inMilliseconds;
         final progress = durationMs > 0
-            ? (player.position.inMilliseconds / durationMs)
-                .clamp(0.0, 1.0)
+            ? (player.position.inMilliseconds / durationMs).clamp(0.0, 1.0)
             : 0.0;
 
         return Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: () => Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const PlaybackScreen(),
-              ),
+              MaterialPageRoute<void>(builder: (_) => const PlaybackScreen()),
             ),
             borderRadius: BorderRadius.circular(16),
             child: Container(
@@ -246,7 +243,7 @@ class _MiniArtwork extends StatelessWidget {
       if (isNetwork ||
           imagePath.startsWith('http://') ||
           imagePath.startsWith('https://')) {
-        image = Image.network(
+        image = sonexaNetworkImage(
           imagePath,
           width: 40,
           height: 40,

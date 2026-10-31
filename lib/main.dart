@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'theme/app_theme.dart';
 import 'theme/theme_controller.dart';
 import 'player/player_controller.dart';
@@ -55,9 +56,11 @@ class _AuthGateState extends State<AuthGate> {
   Future<Widget> _getDestination() async {
     final prefs = await SharedPreferences.getInstance();
     final loggedIn = prefs.getBool('isLoggedIn') ?? false;
-    final registered = prefs.getBool('hasRegistered') ??
+    final registered =
+        prefs.getBool('hasRegistered') ??
         (prefs.getString('account_email') != null ||
-         prefs.getString('sonexa_profile_email') != null || loggedIn);
+            prefs.getString('sonexa_profile_email') != null ||
+            loggedIn);
 
     if (loggedIn) {
       return const BiometricLockWrapper(child: MainShell());
@@ -74,14 +77,21 @@ class _AuthGateState extends State<AuthGate> {
         if (snapshot.hasError) {
           return const Scaffold(
             backgroundColor: Color(0xFF090414),
-            body: Center(child: Text('Could not open SONEXA',
-              style: TextStyle(color: Colors.white))),
+            body: Center(
+              child: Text(
+                'Could not open SONEXA',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
           );
         }
         if (!snapshot.hasData) {
-          return const Scaffold(backgroundColor: Color(0xFF090414),
-            body: Center(child: CircularProgressIndicator(
-              color: Color(0xFFB852FA))));
+          return const Scaffold(
+            backgroundColor: Color(0xFF090414),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFB852FA)),
+            ),
+          );
         }
         return snapshot.data!;
       },

@@ -3,32 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 
 class BiometricLockScreen extends StatefulWidget {
-
-  const BiometricLockScreen({
-
-    super.key,
-
-    required this.onUnlocked,
-
-  });
+  const BiometricLockScreen({super.key, required this.onUnlocked});
 
   final VoidCallback onUnlocked;
 
   @override
-
-  State<BiometricLockScreen> createState() =>
-
-      _BiometricLockScreenState();
-
+  State<BiometricLockScreen> createState() => _BiometricLockScreenState();
 }
 
-class _BiometricLockScreenState
-
-    extends State<BiometricLockScreen> {
-
-  final LocalAuthentication _localAuth =
-
-      LocalAuthentication();
+class _BiometricLockScreenState extends State<BiometricLockScreen> {
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   bool _authenticating = false;
 
@@ -38,45 +22,25 @@ class _BiometricLockScreenState
 
   // ============================================================
 
-  static const Color _darkBackground =
+  static const Color _darkBackground = Color(0xFF080710);
 
-      Color(0xFF080710);
+  static const Color _lightBackground = Color(0xFFF7F5FA);
 
-  static const Color _lightBackground =
+  static const Color _darkPrimary = Colors.white;
 
-      Color(0xFFF7F5FA);
+  static const Color _lightPrimary = Color(0xFF18151D);
 
-  static const Color _darkPrimary =
+  static const Color _darkSecondary = Color(0xFFA9A1B8);
 
-      Colors.white;
+  static const Color _lightSecondary = Color(0xFF70697A);
 
-  static const Color _lightPrimary =
+  static const Color _darkButton = Color(0xFF913CFF);
 
-      Color(0xFF18151D);
+  static const Color _lightButton = Color(0xFF913CFF);
 
-  static const Color _darkSecondary =
+  static const Color _darkDisabled = Color(0xFF30243F);
 
-      Color(0xFFA9A1B8);
-
-  static const Color _lightSecondary =
-
-      Color(0xFF70697A);
-
-  static const Color _darkButton =
-
-      Color(0xFF913CFF);
-
-  static const Color _lightButton =
-
-      Color(0xFF913CFF);
-
-  static const Color _darkDisabled =
-
-      Color(0xFF30243F);
-
-  static const Color _lightDisabled =
-
-      Color(0xFFE4D8F5);
+  static const Color _lightDisabled = Color(0xFFE4D8F5);
 
   // ============================================================
 
@@ -84,9 +48,7 @@ class _BiometricLockScreenState
 
   // ============================================================
 
-  String _message =
-
-      'Use fingerprint or face unlock';
+  String _message = 'Use fingerprint or face unlock';
 
   // ============================================================
 
@@ -95,61 +57,27 @@ class _BiometricLockScreenState
   // ============================================================
 
   bool _isDark(BuildContext context) {
-
-    return Theme.of(context).brightness ==
-
-        Brightness.dark;
-
+    return Theme.of(context).brightness == Brightness.dark;
   }
 
   Color _background(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkBackground
-
-        : _lightBackground;
-
+    return _isDark(context) ? _darkBackground : _lightBackground;
   }
 
   Color _primaryText(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkPrimary
-
-        : _lightPrimary;
-
+    return _isDark(context) ? _darkPrimary : _lightPrimary;
   }
 
   Color _secondaryText(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkSecondary
-
-        : _lightSecondary;
-
+    return _isDark(context) ? _darkSecondary : _lightSecondary;
   }
 
   Color _buttonColor(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkButton
-
-        : _lightButton;
-
+    return _isDark(context) ? _darkButton : _lightButton;
   }
 
   Color _disabledButton(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkDisabled
-
-        : _lightDisabled;
-
+    return _isDark(context) ? _darkDisabled : _lightDisabled;
   }
 
   // ============================================================
@@ -159,21 +87,14 @@ class _BiometricLockScreenState
   // ============================================================
 
   @override
-
   void initState() {
-
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-
       if (mounted) {
-
         _authenticate();
-
       }
-
     });
-
   }
 
   // ============================================================
@@ -183,13 +104,11 @@ class _BiometricLockScreenState
   // ============================================================
 
   Future<void> _authenticate() async {
-
     if (_authenticating) return;
 
     if (!mounted) return;
 
     setState(() {
-
       _authenticating = true;
 
       // IMPORTANT:
@@ -198,90 +117,59 @@ class _BiometricLockScreenState
 
       // will not stay permanently.
 
-      _message =
-
-          'Use fingerprint or face unlock';
-
+      _message = 'Use fingerprint or face unlock';
     });
 
     try {
-
-      final bool supported =
-
-          await _localAuth.isDeviceSupported();
+      final bool supported = await _localAuth.isDeviceSupported();
 
       if (!supported) {
-
         if (!mounted) return;
 
         setState(() {
-
           _message =
-
               'Biometric authentication is not supported on this device.';
 
           _authenticating = false;
-
         });
 
         return;
-
       }
 
-      final bool canCheck =
-
-          await _localAuth.canCheckBiometrics;
+      final bool canCheck = await _localAuth.canCheckBiometrics;
 
       if (!canCheck) {
-
         if (!mounted) return;
 
         setState(() {
-
-          _message =
-
-              'No fingerprint or face authentication is available.';
+          _message = 'No fingerprint or face authentication is available.';
 
           _authenticating = false;
-
         });
 
         return;
-
       }
 
-      final List<BiometricType> available =
-
-          await _localAuth.getAvailableBiometrics();
+      final List<BiometricType> available = await _localAuth
+          .getAvailableBiometrics();
 
       if (available.isEmpty) {
-
         if (!mounted) return;
 
         setState(() {
-
           _message =
-
               'Please set up fingerprint or face unlock on your device first.';
 
           _authenticating = false;
-
         });
 
         return;
-
       }
 
-      final bool authenticated =
-
-          await _localAuth.authenticate(
-
-        localizedReason:
-
-            'Unlock SONEXA using your fingerprint or face.',
+      final bool authenticated = await _localAuth.authenticate(
+        localizedReason: 'Unlock SONEXA using your fingerprint or face.',
 
         options: const AuthenticationOptions(
-
           biometricOnly: true,
 
           stickyAuth: true,
@@ -289,19 +177,15 @@ class _BiometricLockScreenState
           useErrorDialogs: true,
 
           sensitiveTransaction: true,
-
         ),
-
       );
 
       if (!mounted) return;
 
       if (authenticated) {
-
         widget.onUnlocked();
 
         return;
-
       }
 
       // ========================================================
@@ -311,35 +195,23 @@ class _BiometricLockScreenState
       // ========================================================
 
       setState(() {
-
         _authenticating = false;
 
         // Don't permanently show "Authentication cancelled".
 
-        _message =
-
-            'Use fingerprint or face unlock';
-
+        _message = 'Use fingerprint or face unlock';
       });
-
     } catch (_) {
-
       if (!mounted) return;
 
       setState(() {
-
         _authenticating = false;
 
         // Keep user on lock screen.
 
-        _message =
-
-            'Authentication failed. Try again.';
-
+        _message = 'Authentication failed. Try again.';
       });
-
     }
-
   }
 
   // ============================================================
@@ -349,79 +221,46 @@ class _BiometricLockScreenState
   // ============================================================
 
   @override
-
   Widget build(BuildContext context) {
-
     final bool dark = _isDark(context);
 
     return Scaffold(
-
       backgroundColor: _background(context),
 
       body: SafeArea(
-
         child: Center(
-
           child: SingleChildScrollView(
-
-            padding: const EdgeInsets.symmetric(
-
-              horizontal: 28,
-
-              vertical: 30,
-
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
 
             child: Column(
-
-              mainAxisAlignment:
-
-                  MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
 
               children: [
-
                 // ==================================================
 
                 // SONEXA LOGO
 
                 // ==================================================
-
                 SizedBox(
-
                   width: 150,
 
                   height: 150,
 
                   child: Image.asset(
-
                     'assets/images/sonexa_logo.png',
 
                     fit: BoxFit.contain,
 
-                    errorBuilder: (
-
-                      context,
-
-                      error,
-
-                      stackTrace,
-
-                    ) {
-
+                    errorBuilder: (context, error, stackTrace) {
                       return Icon(
-
                         Icons.music_note_rounded,
 
                         color: _buttonColor(context),
 
                         size: 85,
-
                       );
-
                     },
-
                   ),
-
                 ),
 
                 const SizedBox(height: 28),
@@ -431,15 +270,12 @@ class _BiometricLockScreenState
                 // TITLE
 
                 // ==================================================
-
                 Text(
-
                   'SONEXA is Locked',
 
                   textAlign: TextAlign.center,
 
                   style: TextStyle(
-
                     color: _primaryText(context),
 
                     fontSize: 25,
@@ -447,9 +283,7 @@ class _BiometricLockScreenState
                     fontWeight: FontWeight.w800,
 
                     letterSpacing: -0.4,
-
                   ),
-
                 ),
 
                 const SizedBox(height: 10),
@@ -459,15 +293,10 @@ class _BiometricLockScreenState
                 // MESSAGE
 
                 // ==================================================
-
                 AnimatedSwitcher(
-
-                  duration:
-
-                      const Duration(milliseconds: 200),
+                  duration: const Duration(milliseconds: 200),
 
                   child: Text(
-
                     _message,
 
                     key: ValueKey(_message),
@@ -475,17 +304,13 @@ class _BiometricLockScreenState
                     textAlign: TextAlign.center,
 
                     style: TextStyle(
-
                       color: _secondaryText(context),
 
                       fontSize: 13,
 
                       height: 1.5,
-
                     ),
-
                   ),
-
                 ),
 
                 const SizedBox(height: 30),
@@ -495,93 +320,54 @@ class _BiometricLockScreenState
                 // UNLOCK BUTTON
 
                 // ==================================================
-
                 SizedBox(
-
                   width: double.infinity,
 
                   height: 54,
 
                   child: ElevatedButton.icon(
-
-                    onPressed: _authenticating
-
-                        ? null
-
-                        : _authenticate,
+                    onPressed: _authenticating ? null : _authenticate,
 
                     icon: Icon(
-
                       Icons.fingerprint_rounded,
 
                       size: 23,
 
                       color: _authenticating
-
                           ? (dark
-
-                              ? const Color(0xFF9C91A9)
-
-                              : const Color(0xFF8D829C))
-
+                                ? const Color(0xFF9C91A9)
+                                : const Color(0xFF8D829C))
                           : Colors.white,
-
                     ),
 
                     label: Text(
-
-                      _authenticating
-
-                          ? 'Authenticating...'
-
-                          : 'Unlock SONEXA',
+                      _authenticating ? 'Authenticating...' : 'Unlock SONEXA',
 
                       style: const TextStyle(
-
                         fontSize: 15,
 
                         fontWeight: FontWeight.w700,
-
                       ),
-
                     ),
 
                     style: ElevatedButton.styleFrom(
-
-                      backgroundColor:
-
-                          _buttonColor(context),
+                      backgroundColor: _buttonColor(context),
 
                       foregroundColor: Colors.white,
 
-                      disabledBackgroundColor:
+                      disabledBackgroundColor: _disabledButton(context),
 
-                          _disabledButton(context),
-
-                      disabledForegroundColor:
-
-                          dark
-
-                              ? const Color(0xFF9C91A9)
-
-                              : const Color(0xFF8D829C),
+                      disabledForegroundColor: dark
+                          ? const Color(0xFF9C91A9)
+                          : const Color(0xFF8D829C),
 
                       elevation: 0,
 
-                      shape:
-
-                          RoundedRectangleBorder(
-
-                        borderRadius:
-
-                            BorderRadius.circular(17),
-
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(17),
                       ),
-
                     ),
-
                   ),
-
                 ),
 
                 const SizedBox(height: 18),
@@ -591,37 +377,22 @@ class _BiometricLockScreenState
                 // SMALL SECURITY TEXT
 
                 // ==================================================
-
                 Text(
-
                   'Your music stays protected on this device.',
 
                   textAlign: TextAlign.center,
 
                   style: TextStyle(
-
-                    color: _secondaryText(context)
-
-                        .withValues(alpha: 0.75),
+                    color: _secondaryText(context).withValues(alpha: 0.75),
 
                     fontSize: 11,
-
                   ),
-
                 ),
-
               ],
-
             ),
-
           ),
-
         ),
-
       ),
-
     );
-
   }
-
 }

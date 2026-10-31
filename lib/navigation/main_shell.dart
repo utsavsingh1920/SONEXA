@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../player/player_scope.dart';
@@ -27,9 +26,7 @@ class _MainShellState extends State<MainShell> {
   ];
 
   void _changePage(int index) {
-    if (index < 0 ||
-        index >= _pages.length ||
-        index == selectedIndex) {
+    if (index < 0 || index >= _pages.length || index == selectedIndex) {
       return;
     }
 
@@ -46,20 +43,22 @@ class _MainShellState extends State<MainShell> {
     final isDark = theme.brightness == Brightness.dark;
 
     final primary = theme.colorScheme.primary;
-    final background =
-        isDark ? AppTheme.background : AppTheme.lightBackground;
-    final surface =
-        isDark ? const Color(0xFF130D20) : Colors.white;
-    final border =
-        isDark ? const Color(0xFF302342) : const Color(0xFFE5DCEE);
-    final selectedFill =
-        isDark ? const Color(0xFF442079) : const Color(0xFFF0E4FF);
-    final activeColor =
-        isDark ? const Color(0xFFDCC2FF) : const Color(0xFF7124C8);
-    final inactiveColor =
-        isDark ? const Color(0xFFAEA2C0) : const Color(0xFF867993);
+    final background = isDark ? AppTheme.background : AppTheme.lightBackground;
+    final surface = isDark ? const Color(0xFF130D20) : Colors.white;
+    final border = isDark ? const Color(0xFF302342) : const Color(0xFFE5DCEE);
+    final selectedFill = isDark
+        ? const Color(0xFF442079)
+        : const Color(0xFFF0E4FF);
+    final activeColor = isDark
+        ? const Color(0xFFDCC2FF)
+        : const Color(0xFF7124C8);
+    final inactiveColor = isDark
+        ? const Color(0xFFAEA2C0)
+        : const Color(0xFF867993);
 
     final player = PlayerScope.of(context);
+    final bool searchKeyboardVisible =
+        selectedIndex == 1 && MediaQuery.viewInsetsOf(context).bottom > 0;
 
     return AnimatedBuilder(
       animation: player,
@@ -82,79 +81,75 @@ class _MainShellState extends State<MainShell> {
               children: [
                 // Screen receives only the available content height.
                 Expanded(
-                  child: IndexedStack(
-                    index: selectedIndex,
-                    children: _pages,
-                  ),
+                  child: IndexedStack(index: selectedIndex, children: _pages),
                 ),
 
-                // Persistent playback controls and bottom navigation.
-                SafeArea(
-                  top: false,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const MiniPlayer(),
+                // Hide persistent controls while the Search keyboard is open.
+                // They return automatically when the keyboard is dismissed.
+                if (!searchKeyboardVisible)
+                  SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const MiniPlayer(),
 
-                      Container(
-                        height: 60,
-                        margin: const EdgeInsets.fromLTRB(4, 0, 4, 0),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: surface,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: border,
-                            width: 1,
+                        Container(
+                          height: 60,
+                          margin: const EdgeInsets.fromLTRB(4, 0, 4, 0),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 5,
+                          ),
+                          decoration: BoxDecoration(
+                            color: surface,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: border, width: 1),
+                          ),
+                          child: Row(
+                            children: [
+                              _navItem(
+                                0,
+                                Icons.home_rounded,
+                                'Home',
+                                primary,
+                                activeColor,
+                                inactiveColor,
+                                selectedFill,
+                              ),
+                              _navItem(
+                                1,
+                                Icons.search_rounded,
+                                'Search',
+                                primary,
+                                activeColor,
+                                inactiveColor,
+                                selectedFill,
+                              ),
+                              _navItem(
+                                2,
+                                Icons.library_music_rounded,
+                                'Library',
+                                primary,
+                                activeColor,
+                                inactiveColor,
+                                selectedFill,
+                              ),
+                              _navItem(
+                                3,
+                                Icons.settings_rounded,
+                                'Settings',
+                                primary,
+                                activeColor,
+                                inactiveColor,
+                                selectedFill,
+                              ),
+                            ],
                           ),
                         ),
-                        child: Row(
-                          children: [
-                            _navItem(
-                              0,
-                              Icons.home_rounded,
-                              'Home',
-                              primary,
-                              activeColor,
-                              inactiveColor,
-                              selectedFill,
-                            ),
-                            _navItem(
-                              1,
-                              Icons.search_rounded,
-                              'Search',
-                              primary,
-                              activeColor,
-                              inactiveColor,
-                              selectedFill,
-                            ),
-                            _navItem(
-                              2,
-                              Icons.library_music_rounded,
-                              'Library',
-                              primary,
-                              activeColor,
-                              inactiveColor,
-                              selectedFill,
-                            ),
-                            _navItem(
-                              3,
-                              Icons.settings_rounded,
-                              'Settings',
-                              primary,
-                              activeColor,
-                              inactiveColor,
-                              selectedFill,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
               ],
             ),
           ),
@@ -189,9 +184,7 @@ class _MainShellState extends State<MainShell> {
               curve: Curves.easeOutCubic,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: selected
-                    ? selectedFill
-                    : Colors.transparent,
+                color: selected ? selectedFill : Colors.transparent,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
                   color: selected
@@ -216,9 +209,7 @@ class _MainShellState extends State<MainShell> {
                     style: TextStyle(
                       fontSize: 10,
                       height: 1.1,
-                      fontWeight: selected
-                          ? FontWeight.w700
-                          : FontWeight.w500,
+                      fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                       color: selected ? activeColor : inactiveColor,
                     ),
                   ),

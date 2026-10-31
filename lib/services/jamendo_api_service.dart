@@ -120,6 +120,12 @@ class JamendoApiService {
         final Map<String, dynamic> json = Map<String, dynamic>.from(item);
         final String id = json['id']?.toString() ?? '';
         final String audio = json['audio']?.toString() ?? '';
+        final String downloadUrl = json['audiodownload']?.toString() ?? '';
+        final dynamic rawDownloadAllowed = json['audiodownload_allowed'];
+        final bool downloadAllowed =
+            rawDownloadAllowed == true ||
+            rawDownloadAllowed?.toString().toLowerCase() == 'true' ||
+            rawDownloadAllowed?.toString() == '1';
         if (id.isEmpty || audio.isEmpty) continue;
 
         final String title = json['name']?.toString() ?? 'Unknown Song';
@@ -159,6 +165,8 @@ class JamendoApiService {
             duration: _parseInt(json['duration']),
             isNetwork: true,
             source: 'jamendo',
+            downloadUrl: downloadUrl,
+            downloadAllowed: downloadAllowed,
           ),
         );
       }

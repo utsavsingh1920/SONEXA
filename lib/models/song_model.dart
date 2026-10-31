@@ -9,6 +9,9 @@ class SongModel {
   final int duration;
   final bool isNetwork;
   final String source;
+  final String downloadUrl;
+  final bool downloadAllowed;
+  final String downloadedAudioPath;
 
   const SongModel({
     required this.id,
@@ -21,6 +24,9 @@ class SongModel {
     this.duration = 0,
     this.isNetwork = false,
     this.source = 'local',
+    this.downloadUrl = '',
+    this.downloadAllowed = false,
+    this.downloadedAudioPath = '',
   });
 
   factory SongModel.fromAudiusJson(Map<String, dynamic> json) {
@@ -61,6 +67,7 @@ class SongModel {
       duration: _parseInt(json['duration']),
       isNetwork: true,
       source: 'audius',
+      downloadAllowed: false,
     );
   }
 
@@ -75,6 +82,9 @@ class SongModel {
     int? duration,
     bool? isNetwork,
     String? source,
+    String? downloadUrl,
+    bool? downloadAllowed,
+    String? downloadedAudioPath,
   }) {
     return SongModel(
       id: id ?? this.id,
@@ -87,6 +97,9 @@ class SongModel {
       duration: duration ?? this.duration,
       isNetwork: isNetwork ?? this.isNetwork,
       source: source ?? this.source,
+      downloadUrl: downloadUrl ?? this.downloadUrl,
+      downloadAllowed: downloadAllowed ?? this.downloadAllowed,
+      downloadedAudioPath: downloadedAudioPath ?? this.downloadedAudioPath,
     );
   }
 
@@ -101,6 +114,9 @@ class SongModel {
     'duration': duration,
     'isNetwork': isNetwork,
     'source': source,
+    'downloadUrl': downloadUrl,
+    'downloadAllowed': downloadAllowed,
+    'downloadedAudioPath': downloadedAudioPath,
   };
 
   factory SongModel.fromJson(Map<String, dynamic> json) {
@@ -117,11 +133,19 @@ class SongModel {
       duration: _parseInt(json['duration']),
       isNetwork: json['isNetwork'] == true,
       source: json['source']?.toString() ?? 'local',
+      downloadUrl: json['downloadUrl']?.toString() ?? '',
+      downloadAllowed: json['downloadAllowed'] == true,
+      downloadedAudioPath: json['downloadedAudioPath']?.toString() ?? '',
     );
   }
 
   bool get hasValidAudio => audioPath.trim().isNotEmpty;
   bool get hasArtwork => imagePath.trim().isNotEmpty;
+  bool get isDownloaded => downloadedAudioPath.trim().isNotEmpty;
+  bool get canDownload =>
+      downloadAllowed &&
+      downloadUrl.trim().startsWith('https://') &&
+      !isPreview;
   bool get isAudiusSong => source == 'audius';
   bool get isJamendoSong => source == 'jamendo';
   bool get isITunesSong => source == 'itunes';

@@ -4,23 +4,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'biometric_lock_screen.dart';
 
 class BiometricLockWrapper extends StatefulWidget {
-  const BiometricLockWrapper({
-    super.key,
-    required this.child,
-  });
+  const BiometricLockWrapper({super.key, required this.child});
 
   final Widget child;
 
   @override
-  State<BiometricLockWrapper> createState() =>
-      _BiometricLockWrapperState();
+  State<BiometricLockWrapper> createState() => _BiometricLockWrapperState();
 }
 
-class _BiometricLockWrapperState
-    extends State<BiometricLockWrapper>
+class _BiometricLockWrapperState extends State<BiometricLockWrapper>
     with WidgetsBindingObserver {
-  static const String _biometricKey =
-      'security_biometric_enabled';
+  static const String _biometricKey = 'security_biometric_enabled';
 
   bool _enabled = false;
   bool _locked = false;
@@ -45,13 +39,11 @@ class _BiometricLockWrapperState
   }
 
   Future<void> _loadBiometricState() async {
-    final SharedPreferences prefs =
-        await SharedPreferences.getInstance();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     if (!mounted) return;
 
-    final bool enabled =
-        prefs.getBool(_biometricKey) ?? false;
+    final bool enabled = prefs.getBool(_biometricKey) ?? false;
 
     setState(() {
       _enabled = enabled;
@@ -61,17 +53,14 @@ class _BiometricLockWrapperState
   }
 
   @override
-  void didChangeAppLifecycleState(
-    AppLifecycleState state,
-  ) {
+  void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!_enabled) return;
 
     if (state == AppLifecycleState.paused) {
       _appWasPaused = true;
     }
 
-    if (state == AppLifecycleState.resumed &&
-        _appWasPaused) {
+    if (state == AppLifecycleState.resumed && _appWasPaused) {
       _appWasPaused = false;
 
       _lockApp();
@@ -100,9 +89,7 @@ class _BiometricLockWrapperState
       return const Scaffold(
         backgroundColor: Color(0xFF080710),
         body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF913CFF),
-          ),
+          child: CircularProgressIndicator(color: Color(0xFF913CFF)),
         ),
       );
     }
@@ -116,9 +103,7 @@ class _BiometricLockWrapperState
           Positioned.fill(
             child: Material(
               color: const Color(0xFF080710),
-              child: BiometricLockScreen(
-                onUnlocked: _unlockApp,
-              ),
+              child: BiometricLockScreen(onUnlocked: _unlockApp),
             ),
           ),
       ],

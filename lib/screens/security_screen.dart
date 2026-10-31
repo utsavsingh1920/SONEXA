@@ -5,17 +5,13 @@ import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SecurityScreen extends StatefulWidget {
-
   const SecurityScreen({super.key});
 
   @override
-
   State<SecurityScreen> createState() => _SecurityScreenState();
-
 }
 
 class _SecurityScreenState extends State<SecurityScreen> {
-
   // ============================================================
 
   // DARK THEME COLORS
@@ -62,13 +58,9 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   // ============================================================
 
-  static const String _biometricKey =
+  static const String _biometricKey = 'security_biometric_enabled';
 
-      'security_biometric_enabled';
-
-  static const String _loginAlertsKey =
-
-      'security_login_alerts';
+  static const String _loginAlertsKey = 'security_login_alerts';
 
   // ============================================================
 
@@ -76,9 +68,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   // ============================================================
 
-  final LocalAuthentication _localAuth =
-
-      LocalAuthentication();
+  final LocalAuthentication _localAuth = LocalAuthentication();
 
   bool _biometric = false;
 
@@ -95,91 +85,39 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   bool _isDark(BuildContext context) {
-
-    return Theme.of(context).brightness ==
-
-        Brightness.dark;
-
+    return Theme.of(context).brightness == Brightness.dark;
   }
 
   Color _background(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkBackground
-
-        : _lightBackground;
-
+    return _isDark(context) ? _darkBackground : _lightBackground;
   }
 
   Color _cardColor(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkCard
-
-        : _lightCard;
-
+    return _isDark(context) ? _darkCard : _lightCard;
   }
 
   Color _borderColor(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkBorder
-
-        : _lightBorder;
-
+    return _isDark(context) ? _darkBorder : _lightBorder;
   }
 
   Color _purple(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkPurple
-
-        : _lightPurple;
-
+    return _isDark(context) ? _darkPurple : _lightPurple;
   }
 
   Color _muted(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkMuted
-
-        : _lightMuted;
-
+    return _isDark(context) ? _darkMuted : _lightMuted;
   }
 
   Color _iconBackground(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkIconBackground
-
-        : _lightIconBackground;
-
+    return _isDark(context) ? _darkIconBackground : _lightIconBackground;
   }
 
   Color _secondaryText(BuildContext context) {
-
-    return _isDark(context)
-
-        ? _darkSecondaryText
-
-        : _lightSecondaryText;
-
+    return _isDark(context) ? _darkSecondaryText : _lightSecondaryText;
   }
 
   Color _primaryText(BuildContext context) {
-
-    return _isDark(context)
-
-        ? Colors.white
-
-        : const Color(0xFF17131D);
-
+    return _isDark(context) ? Colors.white : const Color(0xFF17131D);
   }
 
   // ============================================================
@@ -189,13 +127,10 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   @override
-
   void initState() {
-
     super.initState();
 
     _loadSettings();
-
   }
 
   // ============================================================
@@ -205,27 +140,17 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   Future<void> _loadSettings() async {
-
-    final SharedPreferences prefs =
-
-        await SharedPreferences.getInstance();
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
     if (!mounted) return;
 
     setState(() {
+      _biometric = prefs.getBool(_biometricKey) ?? false;
 
-      _biometric =
-
-          prefs.getBool(_biometricKey) ?? false;
-
-      _loginAlerts =
-
-          prefs.getBool(_loginAlertsKey) ?? true;
+      _loginAlerts = prefs.getBool(_loginAlertsKey) ?? true;
 
       _loading = false;
-
     });
-
   }
 
   // ============================================================
@@ -235,67 +160,40 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   Future<bool> _authenticate() async {
-
     try {
-
-      final bool supported =
-
-          await _localAuth.isDeviceSupported();
+      final bool supported = await _localAuth.isDeviceSupported();
 
       if (!supported) {
-
         _showMessage(
-
           'Biometric authentication is not supported on this device.',
-
         );
 
         return false;
-
       }
 
-      final bool canCheck =
-
-          await _localAuth.canCheckBiometrics;
+      final bool canCheck = await _localAuth.canCheckBiometrics;
 
       if (!canCheck) {
-
-        _showMessage(
-
-          'No fingerprint or face authentication is available.',
-
-        );
+        _showMessage('No fingerprint or face authentication is available.');
 
         return false;
-
       }
 
-      final List<BiometricType> biometrics =
-
-          await _localAuth.getAvailableBiometrics();
+      final List<BiometricType> biometrics = await _localAuth
+          .getAvailableBiometrics();
 
       if (biometrics.isEmpty) {
-
         _showMessage(
-
           'Please set up fingerprint or face unlock on your device first.',
-
         );
 
         return false;
-
       }
 
-      final bool authenticated =
-
-          await _localAuth.authenticate(
-
-        localizedReason:
-
-            'Authenticate to protect your SONEXA account.',
+      final bool authenticated = await _localAuth.authenticate(
+        localizedReason: 'Authenticate to protect your SONEXA account.',
 
         options: const AuthenticationOptions(
-
           biometricOnly: true,
 
           stickyAuth: true,
@@ -303,29 +201,17 @@ class _SecurityScreenState extends State<SecurityScreen> {
           useErrorDialogs: true,
 
           sensitiveTransaction: true,
-
         ),
-
       );
 
       return authenticated;
-
     } catch (_) {
-
       if (mounted) {
-
-        _showMessage(
-
-          'Biometric authentication failed.',
-
-        );
-
+        _showMessage('Biometric authentication failed.');
       }
 
       return false;
-
     }
-
   }
 
   // ============================================================
@@ -334,114 +220,60 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   // ============================================================
 
-  Future<void> _toggleBiometric(
-
-    bool value,
-
-  ) async {
-
+  Future<void> _toggleBiometric(bool value) async {
     if (_busy) return;
 
     setState(() {
-
       _busy = true;
-
     });
 
     if (value) {
-
-      final bool authenticated =
-
-          await _authenticate();
+      final bool authenticated = await _authenticate();
 
       if (!mounted) return;
 
       if (authenticated) {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        final SharedPreferences prefs =
-
-            await SharedPreferences.getInstance();
-
-        await prefs.setBool(
-
-          _biometricKey,
-
-          true,
-
-        );
+        await prefs.setBool(_biometricKey, true);
 
         if (!mounted) return;
 
         setState(() {
-
           _biometric = true;
-
         });
 
-        _showMessage(
-
-          'Biometric lock enabled.',
-
-        );
-
+        _showMessage('Biometric lock enabled.');
       } else {
-
         setState(() {
-
           _biometric = false;
-
         });
-
       }
-
     } else {
-
-      final bool authenticated =
-
-          await _authenticate();
+      final bool authenticated = await _authenticate();
 
       if (!mounted) return;
 
       if (authenticated) {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-        final SharedPreferences prefs =
-
-            await SharedPreferences.getInstance();
-
-        await prefs.setBool(
-
-          _biometricKey,
-
-          false,
-
-        );
+        await prefs.setBool(_biometricKey, false);
 
         if (!mounted) return;
 
         setState(() {
-
           _biometric = false;
-
         });
 
-        _showMessage(
-
-          'Biometric lock disabled.',
-
-        );
-
+        _showMessage('Biometric lock disabled.');
       }
-
     }
 
     if (!mounted) return;
 
     setState(() {
-
       _busy = false;
-
     });
-
   }
 
   // ============================================================
@@ -450,32 +282,16 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   // ============================================================
 
-  Future<void> _toggleLoginAlerts(
+  Future<void> _toggleLoginAlerts(bool value) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    bool value,
-
-  ) async {
-
-    final SharedPreferences prefs =
-
-        await SharedPreferences.getInstance();
-
-    await prefs.setBool(
-
-      _loginAlertsKey,
-
-      value,
-
-    );
+    await prefs.setBool(_loginAlertsKey, value);
 
     if (!mounted) return;
 
     setState(() {
-
       _loginAlerts = value;
-
     });
-
   }
 
   // ============================================================
@@ -485,47 +301,27 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   void _showMessage(String message) {
-
     if (!mounted) return;
 
     final bool dark = _isDark(context);
 
     ScaffoldMessenger.of(context)
-
       ..hideCurrentSnackBar()
-
       ..showSnackBar(
-
         SnackBar(
-
           content: Text(
-
             message,
 
-            style: TextStyle(
-
-              color: dark
-
-                  ? Colors.white
-
-                  : Colors.white,
-
-            ),
-
+            style: TextStyle(color: dark ? Colors.white : Colors.white),
           ),
 
           behavior: SnackBarBehavior.floating,
 
           backgroundColor: dark
-
               ? const Color(0xFF21152F)
-
               : const Color(0xFF913CFF),
-
         ),
-
       );
-
   }
 
   // ============================================================
@@ -535,11 +331,8 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   @override
-
   Widget build(BuildContext context) {
-
     return Scaffold(
-
       backgroundColor: _background(context),
 
       // ==========================================================
@@ -547,9 +340,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
       // APP BAR
 
       // ==========================================================
-
       appBar: AppBar(
-
         backgroundColor: _background(context),
 
         elevation: 0,
@@ -557,37 +348,22 @@ class _SecurityScreenState extends State<SecurityScreen> {
         surfaceTintColor: Colors.transparent,
 
         leading: IconButton(
-
-          icon: Icon(
-
-            Icons.arrow_back_rounded,
-
-            color: _primaryText(context),
-
-          ),
+          icon: Icon(Icons.arrow_back_rounded, color: _primaryText(context)),
 
           onPressed: () {
-
             Navigator.pop(context);
-
           },
-
         ),
 
         title: Text(
-
           'Security',
 
           style: TextStyle(
-
             color: _primaryText(context),
 
             fontWeight: FontWeight.w700,
-
           ),
-
         ),
-
       ),
 
       // ==========================================================
@@ -595,167 +371,89 @@ class _SecurityScreenState extends State<SecurityScreen> {
       // BODY
 
       // ==========================================================
-
       body: _loading
-
-          ? Center(
-
-              child: CircularProgressIndicator(
-
-                color: _purple(context),
-
-              ),
-
-            )
-
+          ? Center(child: CircularProgressIndicator(color: _purple(context)))
           : ListView(
-
-              padding: const EdgeInsets.fromLTRB(
-
-                20,
-
-                10,
-
-                20,
-
-                30,
-
-              ),
+              padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
 
               children: [
-
                 // ==================================================
 
                 // SECURITY HEADER CARD
 
                 // ==================================================
-
                 Container(
-
                   padding: const EdgeInsets.all(18),
 
                   decoration: BoxDecoration(
+                    color: _purple(context).withValues(alpha: 0.08),
 
-                    color: _purple(context)
-
-                        .withValues(alpha: 0.08),
-
-                    borderRadius:
-
-                        BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(18),
 
                     border: Border.all(
-
-                      color: _purple(context)
-
-                          .withValues(alpha: 0.18),
-
+                      color: _purple(context).withValues(alpha: 0.18),
                     ),
-
                   ),
 
                   child: Row(
-
-                    crossAxisAlignment:
-
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
 
                     children: [
-
                       Container(
-
                         width: 45,
 
                         height: 45,
 
                         decoration: BoxDecoration(
+                          color: _purple(context).withValues(alpha: 0.15),
 
-                          color: _purple(context)
-
-                              .withValues(alpha: 0.15),
-
-                          borderRadius:
-
-                              BorderRadius.circular(14),
-
+                          borderRadius: BorderRadius.circular(14),
                         ),
 
                         child: Icon(
-
                           Icons.shield_rounded,
 
                           color: _purple(context),
-
                         ),
-
                       ),
 
                       const SizedBox(width: 13),
 
                       Expanded(
-
                         child: Column(
-
-                          crossAxisAlignment:
-
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
 
                           children: [
-
                             Text(
-
                               'Keep your account secure',
 
                               style: TextStyle(
-
-                                color:
-
-                                    _primaryText(context),
+                                color: _primaryText(context),
 
                                 fontSize: 15,
 
-                                fontWeight:
-
-                                    FontWeight.w700,
-
+                                fontWeight: FontWeight.w700,
                               ),
-
                             ),
 
                             const SizedBox(height: 5),
 
                             Text(
-
                               'Manage security preferences for your SONEXA account.',
 
                               style: TextStyle(
-
-                                color:
-
-                                    _secondaryText(
-
-                                  context,
-
-                                ),
+                                color: _secondaryText(context),
 
                                 fontSize: 12,
 
                                 height: 1.4,
-
                               ),
-
                             ),
-
                           ],
-
                         ),
-
                       ),
-
                     ],
-
                   ),
-
                 ),
 
                 const SizedBox(height: 28),
@@ -765,13 +463,10 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 // SECURITY OPTIONS TITLE
 
                 // ==================================================
-
                 Text(
-
                   'SECURITY OPTIONS',
 
                   style: TextStyle(
-
                     color: _muted(context),
 
                     fontSize: 12,
@@ -779,9 +474,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                     fontWeight: FontWeight.w700,
 
                     letterSpacing: 1.1,
-
                   ),
-
                 ),
 
                 const SizedBox(height: 10),
@@ -791,9 +484,7 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 // BIOMETRIC
 
                 // ==================================================
-
                 _switchItem(
-
                   context,
 
                   icon: Icons.fingerprint_rounded,
@@ -801,15 +492,12 @@ class _SecurityScreenState extends State<SecurityScreen> {
                   title: 'Biometric Lock',
 
                   subtitle: _biometric
-
                       ? 'Fingerprint or face unlock is enabled'
-
                       : 'Use fingerprint or face unlock',
 
                   value: _biometric,
 
                   onChanged: _toggleBiometric,
-
                 ),
 
                 // ==================================================
@@ -817,25 +505,18 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 // LOGIN ALERTS
 
                 // ==================================================
-
                 _switchItem(
-
                   context,
 
-                  icon:
-
-                      Icons.notifications_active_rounded,
+                  icon: Icons.notifications_active_rounded,
 
                   title: 'Login Alerts',
 
-                  subtitle:
-
-                      'Get notified about new sign-ins',
+                  subtitle: 'Get notified about new sign-ins',
 
                   value: _loginAlerts,
 
                   onChanged: _toggleLoginAlerts,
-
                 ),
 
                 const SizedBox(height: 12),
@@ -845,31 +526,18 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 // CHANGE PASSWORD
 
                 // ==================================================
-
                 _actionItem(
-
                   context,
 
                   icon: Icons.lock_reset_rounded,
 
                   title: 'Change Password',
 
-                  subtitle:
-
-                      'Update your account password',
+                  subtitle: 'Update your account password',
 
                   onTap: () {
-
-                    _showComingSoon(
-
-                      context,
-
-                      'Change Password',
-
-                    );
-
+                    _showComingSoon(context, 'Change Password');
                   },
-
                 ),
 
                 // ==================================================
@@ -877,27 +545,18 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 // SIGN OUT ALL DEVICES
 
                 // ==================================================
-
                 _actionItem(
-
                   context,
 
                   icon: Icons.logout_rounded,
 
-                  title:
+                  title: 'Sign Out From All Devices',
 
-                      'Sign Out From All Devices',
-
-                  subtitle:
-
-                      'Sign out of every active session',
+                  subtitle: 'Sign out of every active session',
 
                   onTap: () {
-
                     _showSignOutDialog(context);
-
                   },
-
                 ),
 
                 const SizedBox(height: 25),
@@ -907,13 +566,10 @@ class _SecurityScreenState extends State<SecurityScreen> {
                 // SECURITY TIPS TITLE
 
                 // ==================================================
-
                 Text(
-
                   'SECURITY TIPS',
 
                   style: TextStyle(
-
                     color: _muted(context),
 
                     fontSize: 12,
@@ -921,35 +577,25 @@ class _SecurityScreenState extends State<SecurityScreen> {
                     fontWeight: FontWeight.w700,
 
                     letterSpacing: 1.1,
-
                   ),
-
                 ),
 
                 const SizedBox(height: 10),
 
                 Text(
-
                   'Use a strong password and never share your login details with anyone.',
 
                   style: TextStyle(
-
                     color: _muted(context),
 
                     fontSize: 12,
 
                     height: 1.5,
-
                   ),
-
                 ),
-
               ],
-
             ),
-
     );
-
   }
 
   // ============================================================
@@ -959,7 +605,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   Widget _switchItem(
-
     BuildContext context, {
 
     required IconData icon,
@@ -971,231 +616,119 @@ class _SecurityScreenState extends State<SecurityScreen> {
     required bool value,
 
     required ValueChanged<bool> onChanged,
-
   }) {
-
     return Container(
-
       margin: const EdgeInsets.only(bottom: 10),
 
-      padding: const EdgeInsets.symmetric(
-
-        horizontal: 14,
-
-        vertical: 13,
-
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
 
       decoration: BoxDecoration(
-
         color: _cardColor(context),
 
         borderRadius: BorderRadius.circular(17),
 
-        border: Border.all(
-
-          color: _borderColor(context),
-
-        ),
-
+        border: Border.all(color: _borderColor(context)),
       ),
 
       child: Row(
-
         children: [
-
           // ICON
 
           Container(
-
             width: 45,
 
             height: 45,
 
             decoration: BoxDecoration(
-
               color: _iconBackground(context),
 
-              borderRadius:
-
-                  BorderRadius.circular(13),
-
+              borderRadius: BorderRadius.circular(13),
             ),
 
-            child: Icon(
-
-              icon,
-
-              color: _purple(context),
-
-              size: 21,
-
-            ),
-
+            child: Icon(icon, color: _purple(context), size: 21),
           ),
 
           const SizedBox(width: 12),
 
           // TEXT
-
           Expanded(
-
             child: Column(
-
-              crossAxisAlignment:
-
-                  CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
-
                 Text(
-
                   title,
 
                   style: TextStyle(
-
-                    color:
-
-                        _primaryText(context),
+                    color: _primaryText(context),
 
                     fontSize: 13,
 
-                    fontWeight:
-
-                        FontWeight.w700,
-
+                    fontWeight: FontWeight.w700,
                   ),
-
                 ),
 
                 const SizedBox(height: 4),
 
                 Text(
-
                   subtitle,
 
                   style: TextStyle(
-
-                    color:
-
-                        _secondaryText(context),
+                    color: _secondaryText(context),
 
                     fontSize: 10,
-
                   ),
-
                 ),
-
               ],
-
             ),
-
           ),
 
           // SWITCH / LOADING
-
-          if (_busy &&
-
-              title == 'Biometric Lock')
-
+          if (_busy && title == 'Biometric Lock')
             SizedBox(
-
               width: 20,
 
               height: 20,
 
-              child:
-
-                  CircularProgressIndicator(
-
+              child: CircularProgressIndicator(
                 strokeWidth: 2,
 
                 color: _purple(context),
-
               ),
-
             )
-
           else
-
             Switch(
-
               value: value,
 
               onChanged: onChanged,
 
-              thumbColor:
-
-                  WidgetStateProperty
-
-                      .resolveWith<Color>(
-
-                (states) {
-
-                  if (states.contains(
-
-                    WidgetState.selected,
-
-                  )) {
-
-                    return _isDark(context)
-
-                        ? const Color(0xFFC575FF)
-
-                        : const Color(0xFF913CFF);
-
-                  }
-
+              thumbColor: WidgetStateProperty.resolveWith<Color>((states) {
+                if (states.contains(WidgetState.selected)) {
                   return _isDark(context)
+                      ? const Color(0xFFC575FF)
+                      : const Color(0xFF913CFF);
+                }
 
-                      ? const Color(0xFF847A94)
+                return _isDark(context)
+                    ? const Color(0xFF847A94)
+                    : const Color(0xFF928A99);
+              }),
 
-                      : const Color(0xFF928A99);
-
-                },
-
-              ),
-
-              trackColor:
-
-                  WidgetStateProperty
-
-                      .resolveWith<Color>(
-
-                (states) {
-
-                  if (states.contains(
-
-                    WidgetState.selected,
-
-                  )) {
-
-                    return _isDark(context)
-
-                        ? const Color(0xFF624180)
-
-                        : const Color(0xFFE6D6FF);
-
-                  }
-
+              trackColor: WidgetStateProperty.resolveWith<Color>((states) {
+                if (states.contains(WidgetState.selected)) {
                   return _isDark(context)
+                      ? const Color(0xFF624180)
+                      : const Color(0xFFE6D6FF);
+                }
 
-                      ? const Color(0xFF30243F)
-
-                      : const Color(0xFFE3DDE9);
-
-                },
-
-              ),
-
+                return _isDark(context)
+                    ? const Color(0xFF30243F)
+                    : const Color(0xFFE3DDE9);
+              }),
             ),
-
         ],
-
       ),
-
     );
-
   }
 
   // ============================================================
@@ -1205,7 +738,6 @@ class _SecurityScreenState extends State<SecurityScreen> {
   // ============================================================
 
   Widget _actionItem(
-
     BuildContext context, {
 
     required IconData icon,
@@ -1215,161 +747,94 @@ class _SecurityScreenState extends State<SecurityScreen> {
     required String subtitle,
 
     required VoidCallback onTap,
-
   }) {
-
     return Material(
-
       color: Colors.transparent,
 
       child: InkWell(
-
         onTap: onTap,
 
         borderRadius: BorderRadius.circular(17),
 
         child: Container(
-
           margin: const EdgeInsets.only(bottom: 10),
 
-          padding: const EdgeInsets.symmetric(
-
-            horizontal: 14,
-
-            vertical: 13,
-
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
 
           decoration: BoxDecoration(
-
             color: _cardColor(context),
 
-            borderRadius:
+            borderRadius: BorderRadius.circular(17),
 
-                BorderRadius.circular(17),
-
-            border: Border.all(
-
-              color: _borderColor(context),
-
-            ),
-
+            border: Border.all(color: _borderColor(context)),
           ),
 
           child: Row(
-
             children: [
-
               // ICON
 
               Container(
-
                 width: 45,
 
                 height: 45,
 
                 decoration: BoxDecoration(
-
                   color: _iconBackground(context),
 
-                  borderRadius:
-
-                      BorderRadius.circular(13),
-
+                  borderRadius: BorderRadius.circular(13),
                 ),
 
-                child: Icon(
-
-                  icon,
-
-                  color: _purple(context),
-
-                  size: 21,
-
-                ),
-
+                child: Icon(icon, color: _purple(context), size: 21),
               ),
 
               const SizedBox(width: 12),
 
               // TEXT
-
               Expanded(
-
                 child: Column(
-
-                  crossAxisAlignment:
-
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-
                     Text(
-
                       title,
 
                       style: TextStyle(
-
-                        color:
-
-                            _primaryText(context),
+                        color: _primaryText(context),
 
                         fontSize: 13,
 
-                        fontWeight:
-
-                            FontWeight.w700,
-
+                        fontWeight: FontWeight.w700,
                       ),
-
                     ),
 
                     const SizedBox(height: 4),
 
                     Text(
-
                       subtitle,
 
                       style: TextStyle(
-
-                        color:
-
-                            _secondaryText(context),
+                        color: _secondaryText(context),
 
                         fontSize: 10,
-
                       ),
-
                     ),
-
                   ],
-
                 ),
-
               ),
 
               // CHEVRON
-
               Icon(
-
                 Icons.chevron_right_rounded,
 
                 color: _muted(context),
 
                 size: 21,
-
               ),
-
             ],
-
           ),
-
         ),
-
       ),
-
     );
-
   }
 
   // ============================================================
@@ -1378,90 +843,44 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   // ============================================================
 
-  void _showComingSoon(
-
-    BuildContext context,
-
-    String title,
-
-  ) {
-
+  void _showComingSoon(BuildContext context, String title) {
     showDialog<void>(
-
       context: context,
 
       builder: (dialogContext) {
-
         return AlertDialog(
-
           backgroundColor: _cardColor(context),
 
-          surfaceTintColor:
-
-              Colors.transparent,
+          surfaceTintColor: Colors.transparent,
 
           title: Text(
-
             title,
 
             style: TextStyle(
-
               color: _primaryText(context),
 
-              fontWeight:
-
-                  FontWeight.w700,
-
+              fontWeight: FontWeight.w700,
             ),
-
           ),
 
           content: Text(
-
             'This feature will be available soon.',
 
-            style: TextStyle(
-
-              color:
-
-                  _secondaryText(context),
-
-            ),
-
+            style: TextStyle(color: _secondaryText(context)),
           ),
 
           actions: [
-
             TextButton(
-
               onPressed: () {
-
                 Navigator.pop(dialogContext);
-
               },
 
-              child: Text(
-
-                'OK',
-
-                style: TextStyle(
-
-                  color: _purple(context),
-
-                ),
-
-              ),
-
+              child: Text('OK', style: TextStyle(color: _purple(context))),
             ),
-
           ],
-
         );
-
       },
-
     );
-
   }
 
   // ============================================================
@@ -1470,144 +889,73 @@ class _SecurityScreenState extends State<SecurityScreen> {
 
   // ============================================================
 
-  void _showSignOutDialog(
-
-    BuildContext context,
-
-  ) {
-
+  void _showSignOutDialog(BuildContext context) {
     final bool dark = _isDark(context);
 
     showDialog<void>(
-
       context: context,
 
       builder: (dialogContext) {
-
         return AlertDialog(
-
           backgroundColor: _cardColor(context),
 
-          surfaceTintColor:
-
-              Colors.transparent,
+          surfaceTintColor: Colors.transparent,
 
           title: Text(
-
             'Sign out from all devices?',
 
             style: TextStyle(
-
               color: _primaryText(context),
 
-              fontWeight:
-
-                  FontWeight.w700,
-
+              fontWeight: FontWeight.w700,
             ),
-
           ),
 
           content: Text(
-
             'This will sign you out from every active SONEXA session.',
 
-            style: TextStyle(
-
-              color:
-
-                  _secondaryText(context),
-
-            ),
-
+            style: TextStyle(color: _secondaryText(context)),
           ),
 
           actions: [
-
             // CANCEL
 
             TextButton(
-
               onPressed: () {
-
                 Navigator.pop(dialogContext);
-
               },
 
-              child: Text(
-
-                'Cancel',
-
-                style: TextStyle(
-
-                  color: _muted(context),
-
-                ),
-
-              ),
-
+              child: Text('Cancel', style: TextStyle(color: _muted(context))),
             ),
 
             // SIGN OUT
-
             TextButton(
-
               onPressed: () async {
-
                 final SharedPreferences prefs =
+                    await SharedPreferences.getInstance();
 
-                    await SharedPreferences
-
-                        .getInstance();
-
-                await prefs.setBool(
-
-                  'isLoggedIn',
-
-                  false,
-
-                );
+                await prefs.setBool('isLoggedIn', false);
 
                 if (!context.mounted) return;
 
                 Navigator.pop(dialogContext);
 
-                Navigator.of(context)
-
-                    .popUntil(
-
-                  (route) => route.isFirst,
-
-                );
-
+                Navigator.of(context).popUntil((route) => route.isFirst);
               },
 
               child: Text(
-
                 'Sign Out',
 
                 style: TextStyle(
-
                   color: dark
-
                       ? const Color(0xFFFF6B81)
-
                       : const Color(0xFFD93655),
-
                 ),
-
               ),
-
             ),
-
           ],
-
         );
-
       },
-
     );
-
   }
-
 }

@@ -1,3 +1,5 @@
+import '../core/widgets/sonexa_network_image.dart';
+
 import 'package:flutter/material.dart';
 
 import '../models/song_model.dart';
@@ -653,7 +655,7 @@ class _QueueArtwork extends StatelessWidget {
           ? cleanPath.replaceFirst('http://', 'https://')
           : cleanPath;
 
-      return Image.network(
+      return sonexaNetworkImage(
         safeUrl,
         width: 56,
         height: 56,

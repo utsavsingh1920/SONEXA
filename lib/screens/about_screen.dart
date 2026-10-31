@@ -34,7 +34,11 @@ class AboutScreen extends StatelessWidget {
         ),
         title: Text(
           'About SONEXA',
-          style: TextStyle(color: text, fontSize: 20, fontWeight: FontWeight.w800),
+          style: TextStyle(
+            color: text,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
         ),
       ),
       body: SafeArea(
@@ -66,20 +70,33 @@ class AboutScreen extends StatelessWidget {
                             colors: [_accent, _purple],
                           ),
                         ),
-                        child: const Icon(Icons.graphic_eq_rounded,
-                            size: 48, color: Colors.white),
+                        child: const Icon(
+                          Icons.graphic_eq_rounded,
+                          size: 48,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 13),
-                  Text('SONEXA', style: TextStyle(
-                    color: text, fontSize: 27, fontWeight: FontWeight.w900,
-                    letterSpacing: 1.5,
-                  )),
+                  Text(
+                    'SONEXA',
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 27,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  const Text('Feel Every Beat', style: TextStyle(
-                    color: _accent, fontSize: 13, fontWeight: FontWeight.w700,
-                  )),
+                  const Text(
+                    'Feel Every Beat',
+                    style: TextStyle(
+                      color: _accent,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'Your music, your mood, your space. Discover tracks, '
@@ -97,11 +114,29 @@ class AboutScreen extends StatelessWidget {
               decoration: _cardDecoration(surface, border),
               child: Column(
                 children: [
-                  _infoRow(Icons.info_outline_rounded, 'Version', '1.0.0', text, muted),
+                  _infoRow(
+                    Icons.info_outline_rounded,
+                    'Version',
+                    '1.0.0',
+                    text,
+                    muted,
+                  ),
                   _thinDivider(border),
-                  _infoRow(Icons.phone_android_rounded, 'Platform', 'Flutter', text, muted),
+                  _infoRow(
+                    Icons.phone_android_rounded,
+                    'Platform',
+                    'Flutter',
+                    text,
+                    muted,
+                  ),
                   _thinDivider(border),
-                  _infoRow(Icons.music_note_rounded, 'Application', 'SONEXA Music Player', text, muted),
+                  _infoRow(
+                    Icons.music_note_rounded,
+                    'Application',
+                    'SONEXA Music Player',
+                    text,
+                    muted,
+                  ),
                 ],
               ),
             ),
@@ -114,13 +149,22 @@ class AboutScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(children: [
-                    _iconBox(Icons.auto_awesome_rounded),
-                    const SizedBox(width: 11),
-                    Expanded(child: Text('Built for your music', style: TextStyle(
-                      color: text, fontSize: 15, fontWeight: FontWeight.w800,
-                    ))),
-                  ]),
+                  Row(
+                    children: [
+                      _iconBox(Icons.auto_awesome_rounded),
+                      const SizedBox(width: 11),
+                      Expanded(
+                        child: Text(
+                          'Built for your music',
+                          style: TextStyle(
+                            color: text,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
                   Text(
                     'SONEXA brings music discovery, playlists, liked songs, '
@@ -137,19 +181,25 @@ class AboutScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: _cardDecoration(surface, border),
-              child: Column(children: [
-                _feature(Icons.play_circle_outline_rounded, 'Music Playback', text),
-                _thinDivider(border),
-                _feature(Icons.queue_music_rounded, 'Queue Management', text),
-                _thinDivider(border),
-                _feature(Icons.library_music_outlined, 'Music Library', text),
-                _thinDivider(border),
-                _feature(Icons.equalizer_rounded, 'Equalizer', text),
-                _thinDivider(border),
-                _feature(Icons.playlist_play_rounded, 'Playlists', text),
-                _thinDivider(border),
-                _feature(Icons.favorite_border_rounded, 'Liked Songs', text),
-              ]),
+              child: Column(
+                children: [
+                  _feature(
+                    Icons.play_circle_outline_rounded,
+                    'Music Playback',
+                    text,
+                  ),
+                  _thinDivider(border),
+                  _feature(Icons.queue_music_rounded, 'Queue Management', text),
+                  _thinDivider(border),
+                  _feature(Icons.library_music_outlined, 'Music Library', text),
+                  _thinDivider(border),
+                  _feature(Icons.equalizer_rounded, 'Equalizer', text),
+                  _thinDivider(border),
+                  _feature(Icons.playlist_play_rounded, 'Playlists', text),
+                  _thinDivider(border),
+                  _feature(Icons.favorite_border_rounded, 'Liked Songs', text),
+                ],
+              ),
             ),
             const SizedBox(height: 23),
             Container(
@@ -159,46 +209,82 @@ class AboutScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: _purple.withValues(alpha: 0.25)),
               ),
-              child: Column(children: [
-                const Icon(Icons.favorite_rounded, size: 27, color: _accent),
-                const SizedBox(height: 8),
-                Text('Made for music lovers', style: TextStyle(
-                  color: text, fontSize: 14, fontWeight: FontWeight.w800,
-                )),
-                const SizedBox(height: 5),
-                Text('Thank you for listening with SONEXA.',
+              child: Column(
+                children: [
+                  const Icon(Icons.favorite_rounded, size: 27, color: _accent),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Made for music lovers',
+                    style: TextStyle(
+                      color: text,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'Thank you for listening with SONEXA.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: muted, fontSize: 12)),
-              ]),
+                    style: TextStyle(color: muted, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 17),
-            Center(child: TextButton.icon(
-              onPressed: () {
-                ScaffoldMessenger.of(context)
-                  ..hideCurrentSnackBar()
-                  ..showSnackBar(const SnackBar(
-                    content: Text('Online update checking is not configured yet.'),
-                    behavior: SnackBarBehavior.floating,
-                  ));
-              },
-              icon: const Icon(Icons.system_update_rounded, color: _accent, size: 18),
-              label: const Text('Check for Updates', style: TextStyle(
-                color: _accent, fontSize: 13, fontWeight: FontWeight.w700,
-              )),
-            )),
+            Center(
+              child: TextButton.icon(
+                onPressed: () {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Online update checking is not configured yet.',
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                },
+                icon: const Icon(
+                  Icons.system_update_rounded,
+                  color: _accent,
+                  size: 18,
+                ),
+                label: const Text(
+                  'Check for Updates',
+                  style: TextStyle(
+                    color: _accent,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
             const SizedBox(height: 11),
-            Center(child: Text('© 2026 SONEXA', style: TextStyle(color: muted, fontSize: 11))),
+            Center(
+              child: Text(
+                '© 2026 SONEXA',
+                style: TextStyle(color: muted, fontSize: 11),
+              ),
+            ),
             const SizedBox(height: 4),
-            Center(child: Text('Your music. Your mood. Your sound.',
-                style: TextStyle(color: muted, fontSize: 10))),
+            Center(
+              child: Text(
+                'Your music. Your mood. Your sound.',
+                style: TextStyle(color: muted, fontSize: 10),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  static BoxDecoration _cardDecoration(Color surface, Color border,
-      {double radius = 18}) => BoxDecoration(
+  static BoxDecoration _cardDecoration(
+    Color surface,
+    Color border, {
+    double radius = 18,
+  }) => BoxDecoration(
     color: surface,
     borderRadius: BorderRadius.circular(radius),
     border: Border.all(color: border),
@@ -206,16 +292,27 @@ class AboutScreen extends StatelessWidget {
 
   static Widget _sectionTitle(String text, Color color) => Padding(
     padding: const EdgeInsets.only(left: 3),
-    child: Text(text, style: TextStyle(
-      color: color, fontSize: 11.5, fontWeight: FontWeight.w800, letterSpacing: 1,
-    )),
+    child: Text(
+      text,
+      style: TextStyle(
+        color: color,
+        fontSize: 11.5,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 1,
+      ),
+    ),
   );
 
-  static Widget _thinDivider(Color color) => Divider(height: 1, thickness: 1,
-      indent: 56, color: color.withValues(alpha: 0.6));
+  static Widget _thinDivider(Color color) => Divider(
+    height: 1,
+    thickness: 1,
+    indent: 56,
+    color: color.withValues(alpha: 0.6),
+  );
 
   static Widget _iconBox(IconData icon) => Container(
-    width: 39, height: 39,
+    width: 39,
+    height: 39,
     decoration: BoxDecoration(
       color: _purple.withValues(alpha: 0.12),
       borderRadius: BorderRadius.circular(12),
@@ -223,33 +320,57 @@ class AboutScreen extends StatelessWidget {
     child: Icon(icon, color: _accent, size: 20),
   );
 
-  static Widget _infoRow(IconData icon, String title, String value,
-      Color text, Color muted) => Padding(
+  static Widget _infoRow(
+    IconData icon,
+    String title,
+    String value,
+    Color text,
+    Color muted,
+  ) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-    child: Row(children: [
-      _iconBox(icon),
-      const SizedBox(width: 12),
-      Expanded(child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: TextStyle(color: text, fontSize: 13,
-              fontWeight: FontWeight.w700)),
-          const SizedBox(height: 3),
-          Text(value, style: TextStyle(color: muted, fontSize: 11)),
-        ],
-      )),
-    ]),
+    child: Row(
+      children: [
+        _iconBox(icon),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: text,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(value, style: TextStyle(color: muted, fontSize: 11)),
+            ],
+          ),
+        ),
+      ],
+    ),
   );
 
   static Widget _feature(IconData icon, String label, Color text) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 10),
-    child: Row(children: [
-      _iconBox(icon),
-      const SizedBox(width: 12),
-      Expanded(child: Text(label, style: TextStyle(
-        color: text, fontSize: 13, fontWeight: FontWeight.w600,
-      ))),
-      const Icon(Icons.check_rounded, color: _accent, size: 18),
-    ]),
+    child: Row(
+      children: [
+        _iconBox(icon),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              color: text,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const Icon(Icons.check_rounded, color: _accent, size: 18),
+      ],
+    ),
   );
 }

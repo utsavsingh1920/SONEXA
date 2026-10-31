@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
@@ -7,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../data/songs_data.dart';
 import '../models/song_model.dart';
+import '../services/download_service.dart';
 
 class PlayerController extends ChangeNotifier {
   // ============================================================
@@ -263,6 +265,7 @@ class PlayerController extends ChangeNotifier {
   // ============================================================
 
   Future<void> _initializeController() async {
+    await DownloadService.instance.initialize();
     await _restoreSavedData();
 
     await _loadAutoplaySetting();
@@ -750,10 +753,23 @@ class PlayerController extends ChangeNotifier {
       return;
     }
 
+    await DownloadService.instance.initialize();
     final int requestId = ++_loadRequestId;
-    final SongModel selectedSong = songs[index];
+    SongModel selectedSong =
+        DownloadService.instance.downloadedVersion(songs[index]) ??
+        songs[index];
+
+    // A saved path can become stale after app data cleanup or file removal.
+    // Never treat a non-empty path as proof that the audio still exists.
+    final String savedAudioPath = selectedSong.downloadedAudioPath.trim();
+    if (savedAudioPath.isNotEmpty && !await File(savedAudioPath).exists()) {
+      selectedSong = selectedSong.copyWith(downloadedAudioPath: '');
+      _songs[index] = selectedSong;
+    } else if (savedAudioPath.isNotEmpty) {
+      _songs[index] = selectedSong;
+    }
     final String selectedSongKey =
-        '${selectedSong.source}:${selectedSong.id}:${selectedSong.audioPath}';
+        '${selectedSong.source}:${selectedSong.id}:${selectedSong.downloadedAudioPath}:${selectedSong.audioPath}';
 
     currentIndex = index;
 
@@ -790,6 +806,7 @@ class PlayerController extends ChangeNotifier {
 
         if (autoPlay) {
           unawaited(_audioPlayer.play());
+          unawaited(_cacheEligibleSong(selectedSong, index));
         }
 
         notifyListeners();
@@ -799,7 +816,10 @@ class PlayerController extends ChangeNotifier {
       _loadedSongKey = null;
       await _audioPlayer.stop();
 
-      if (selectedSong.isNetwork ||
+      final String localDownload = selectedSong.downloadedAudioPath.trim();
+      if (localDownload.isNotEmpty && await File(localDownload).exists()) {
+        await _audioPlayer.setFilePath(localDownload, preload: true);
+      } else if (selectedSong.isNetwork ||
           selectedSong.audioPath.startsWith('http://') ||
           selectedSong.audioPath.startsWith('https://')) {
         await _audioPlayer.setUrl(selectedSong.audioPath, preload: true);
@@ -818,15 +838,81 @@ class PlayerController extends ChangeNotifier {
 
       if (autoPlay) {
         // Start playback without waiting for the entire track to finish.
-        // This lets PlaybackScreen finish its startup immediately while
-        // network audio continues buffering invisibly in the background.
+        // Eligible Jamendo audio is cached independently in the background.
         unawaited(_audioPlayer.play());
+        unawaited(_cacheEligibleSong(selectedSong, index));
       }
     } catch (error) {
       debugPrint('SONEXA Audio Error: $error');
     }
 
     notifyListeners();
+  }
+
+  // ============================================================
+  // AUTOMATIC OFFLINE AUDIO CACHE
+  // ============================================================
+
+  Future<void> _cacheEligibleSong(SongModel song, int songIndex) async {
+    // Only cache Jamendo tracks when its API explicitly grants permission.
+    // A path string alone is not enough: verify that the file still exists.
+    if (!song.isJamendoSong || !song.canDownload) {
+      return;
+    }
+
+    final String existingPath = song.downloadedAudioPath.trim();
+    if (existingPath.isNotEmpty && await File(existingPath).exists()) {
+      return;
+    }
+
+    final SongModel cacheCandidate = existingPath.isEmpty
+        ? song
+        : song.copyWith(downloadedAudioPath: '');
+
+    try {
+      final SongModel cachedSong = await DownloadService.instance.downloadSong(
+        cacheCandidate,
+      );
+
+      if (songIndex >= 0 &&
+          songIndex < _songs.length &&
+          _songs[songIndex].id == song.id &&
+          _songs[songIndex].source == song.source) {
+        _songs[songIndex] = cachedSong;
+      }
+
+      // Keep the stored song records in sync for future playlist/queue use.
+      _replaceSongInCollection(_likedSongs, cachedSong);
+      _replaceSongInCollection(_recentlyPlayed, cachedSong);
+      _replaceSongInCollection(_queue, cachedSong);
+
+      for (final List<SongModel> playlist in _playlists.values) {
+        _replaceSongInCollection(playlist, cachedSong);
+      }
+      for (final List<SongModel> album in _savedAlbums.values) {
+        _replaceSongInCollection(album, cachedSong);
+      }
+      for (final List<SongModel> artist in _savedArtists.values) {
+        _replaceSongInCollection(artist, cachedSong);
+      }
+
+      _markStateChanged();
+      notifyListeners();
+      debugPrint('SONEXA automatic audio cache completed: ${song.title}');
+    } catch (error) {
+      // Streaming remains available when caching is not permitted or fails.
+      debugPrint('SONEXA automatic audio cache skipped: $error');
+    }
+  }
+
+  void _replaceSongInCollection(List<SongModel> collection, SongModel updated) {
+    final int index = collection.indexWhere(
+      (SongModel item) =>
+          item.id == updated.id && item.source == updated.source,
+    );
+    if (index >= 0) {
+      collection[index] = updated;
+    }
   }
 
   // ============================================================

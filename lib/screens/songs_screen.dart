@@ -1,3 +1,6 @@
+import '../widgets/download_song_button.dart';
+import '../core/widgets/sonexa_network_image.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,6 +12,7 @@ import '../player/player_scope.dart';
 import '../services/audius_api_service.dart';
 import '../services/itunes_api_service.dart';
 import '../services/jamendo_api_service.dart';
+import '../services/offline_song_catalogue_service.dart';
 import 'playback_screen.dart';
 
 class SongsScreen extends StatefulWidget {
@@ -53,7 +57,23 @@ class _SongsScreenState extends State<SongsScreen> {
   }
 
   Future<void> _loadCatalogue() async {
-    if (mounted) {
+    // Show the last successful API catalogue immediately, even without internet.
+    try {
+      final List<SongModel> cached = await OfflineSongCatalogueService.instance
+          .load();
+      if (mounted && cached.isNotEmpty) {
+        setState(() {
+          _apiSongs = _uniqueSongs(cached);
+          _isLoading = false;
+          _loadError = null;
+        });
+      }
+    } catch (error) {
+      debugPrint('SONEXA offline catalogue restore failed: $error');
+    }
+
+    if (!mounted) return;
+    if (_apiSongs.isEmpty) {
       setState(() {
         _isLoading = true;
         _loadError = null;
@@ -70,34 +90,53 @@ class _SongsScreenState extends State<SongsScreen> {
           limit: 35,
         ),
       );
-    } catch (_) {
+    } catch (error) {
       failedSources++;
+      debugPrint('SONEXA iTunes catalogue unavailable: $error');
     }
 
     try {
       loaded.addAll(
         await JamendoApiService.instance.getPopularTracks(limit: 35),
       );
-    } catch (_) {
+    } catch (error) {
       failedSources++;
+      debugPrint('SONEXA Jamendo catalogue unavailable: $error');
     }
 
     try {
       loaded.addAll(
         await AudiusApiService.instance.getTrendingTracks(limit: 25),
       );
-    } catch (_) {
+    } catch (error) {
       failedSources++;
+      debugPrint('SONEXA Audius catalogue unavailable: $error');
     }
 
     if (!mounted) return;
 
+    final List<SongModel> freshSongs = _uniqueSongs(loaded);
+    if (freshSongs.isNotEmpty) {
+      // Save the refreshed list for the next offline launch.
+      try {
+        await OfflineSongCatalogueService.instance.save(freshSongs);
+      } catch (error) {
+        debugPrint('SONEXA offline catalogue save failed: $error');
+      }
+    }
+
+    if (!mounted) return;
     setState(() {
-      _apiSongs = _uniqueSongs(loaded);
+      // Never replace a useful saved catalogue with an empty API response.
+      if (freshSongs.isNotEmpty) {
+        _apiSongs = freshSongs;
+      }
       _isLoading = false;
-      _loadError = failedSources == 3
-          ? 'Online songs could not be loaded. Local songs are still available.'
-          : null;
+      _loadError = _apiSongs.isNotEmpty
+          ? null
+          : (failedSources == 3
+                ? 'No saved online songs yet. Connect to the internet once to load the catalogue.'
+                : 'No online songs are available right now.');
     });
   }
 
@@ -734,6 +773,7 @@ class _SongItem extends StatelessWidget {
                     size: 18,
                   ),
                 ),
+                DownloadSongButton(song: song),
                 IconButton(
                   visualDensity: VisualDensity.compact,
                   onPressed: onMore,
@@ -778,7 +818,7 @@ class _SongArtwork extends StatelessWidget {
       final String safeUrl = path.startsWith('http://')
           ? path.replaceFirst('http://', 'https://')
           : path;
-      return Image.network(
+      return sonexaNetworkImage(
         safeUrl,
         width: 52,
         height: 52,

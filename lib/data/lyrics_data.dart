@@ -3,7 +3,6 @@ const Map<String, List<String>> lyricsData = <String, List<String>>{
   // Empty map होने पर LyricsScreen automatically online API fallback करेगा।
 };
 
-
 String lyricsKeyFromSongTitle(String title) {
   return title
       .trim()

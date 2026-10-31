@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../theme/theme_controller.dart';
 
 class AppearanceScreen extends StatefulWidget {
@@ -44,7 +45,9 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
       await _loadSavedTheme();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not change appearance. Try again.')),
+        const SnackBar(
+          content: Text('Could not change appearance. Try again.'),
+        ),
       );
     }
   }
@@ -69,9 +72,14 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
           icon: Icon(Icons.arrow_back_rounded, color: text),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text('Appearance', style: TextStyle(
-          color: text, fontSize: 20, fontWeight: FontWeight.w800,
-        )),
+        title: Text(
+          'Appearance',
+          style: TextStyle(
+            color: text,
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
       ),
       body: ListView(
         physics: const BouncingScrollPhysics(),
@@ -79,42 +87,67 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text('CHOOSE YOUR THEME', style: TextStyle(
-              color: muted, fontSize: 11, letterSpacing: 1.1,
-              fontWeight: FontWeight.w800,
-            )),
+            child: Text(
+              'CHOOSE YOUR THEME',
+              style: TextStyle(
+                color: muted,
+                fontSize: 11,
+                letterSpacing: 1.1,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
           ),
           const SizedBox(height: 12),
           _option(
-            title: 'Dark', subtitle: 'A comfortable listening experience',
-            icon: Icons.dark_mode_rounded, mode: ThemeMode.dark,
-            text: text, muted: muted, surface: surface, border: border,
+            title: 'Dark',
+            subtitle: 'A comfortable listening experience',
+            icon: Icons.dark_mode_rounded,
+            mode: ThemeMode.dark,
+            text: text,
+            muted: muted,
+            surface: surface,
+            border: border,
           ),
           _option(
-            title: 'Light', subtitle: 'Clean and bright appearance',
-            icon: Icons.light_mode_rounded, mode: ThemeMode.light,
-            text: text, muted: muted, surface: surface, border: border,
+            title: 'Light',
+            subtitle: 'Clean and bright appearance',
+            icon: Icons.light_mode_rounded,
+            mode: ThemeMode.light,
+            text: text,
+            muted: muted,
+            surface: surface,
+            border: border,
           ),
           _option(
-            title: 'System Default', subtitle: 'Match your device appearance',
-            icon: Icons.settings_suggest_rounded, mode: ThemeMode.system,
-            text: text, muted: muted, surface: surface, border: border,
+            title: 'System Default',
+            subtitle: 'Match your device appearance',
+            icon: Icons.settings_suggest_rounded,
+            mode: ThemeMode.system,
+            text: text,
+            muted: muted,
+            surface: surface,
+            border: border,
           ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: surface, borderRadius: BorderRadius.circular(17),
+              color: surface,
+              borderRadius: BorderRadius.circular(17),
               border: Border.all(color: border),
             ),
-            child: Row(children: [
-              const Icon(Icons.palette_outlined, color: _accent, size: 22),
-              const SizedBox(width: 12),
-              Expanded(child: Text(
-                'Your selection applies across SONEXA and is saved for next time.',
-                style: TextStyle(color: muted, fontSize: 12.5, height: 1.4),
-              )),
-            ]),
+            child: Row(
+              children: [
+                const Icon(Icons.palette_outlined, color: _accent, size: 22),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Your selection applies across SONEXA and is saved for next time.',
+                    style: TextStyle(color: muted, fontSize: 12.5, height: 1.4),
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -150,33 +183,51 @@ class _AppearanceScreenState extends State<AppearanceScreen> {
                 width: selected ? 1.25 : 1,
               ),
             ),
-            child: Row(children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: _purple.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(13),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: _purple.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: selected ? _accent : muted,
+                    size: 23,
+                  ),
                 ),
-                child: Icon(icon, color: selected ? _accent : muted, size: 23),
-              ),
-              const SizedBox(width: 13),
-              Expanded(child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(
-                    color: text, fontSize: 14.5, fontWeight: FontWeight.w700,
-                  )),
-                  const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: muted, fontSize: 11.5)),
-                ],
-              )),
-              Icon(
-                selected ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_off_rounded,
-                color: selected ? _accent : muted,
-                size: 22,
-              ),
-            ]),
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          color: text,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        style: TextStyle(color: muted, fontSize: 11.5),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  selected
+                      ? Icons.radio_button_checked_rounded
+                      : Icons.radio_button_off_rounded,
+                  color: selected ? _accent : muted,
+                  size: 22,
+                ),
+              ],
+            ),
           ),
         ),
       ),

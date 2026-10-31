@@ -1,3 +1,5 @@
+import '../core/widgets/sonexa_network_image.dart';
+
 import 'package:flutter/material.dart';
 
 import '../data/songs_data.dart';
@@ -51,7 +53,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
     _selectedTab = switch (widget.initialTab) {
       2 => 1,
       3 => 2,
-      4 => 3,
+      4 || 5 => 3,
       _ => 0,
     };
 
@@ -1967,7 +1969,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ? cleanPath.replaceFirst('http://', 'https://')
           : cleanPath;
 
-      return Image.network(
+      return sonexaNetworkImage(
         url,
         width: width,
         height: height,

@@ -1,3 +1,5 @@
+import '../core/widgets/sonexa_network_image.dart';
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -3648,7 +3650,7 @@ class _HomeScreenState extends State<HomeScreen>
           ? cleanPath.replaceFirst('http://', 'https://')
           : cleanPath;
 
-      return Image.network(
+      return sonexaNetworkImage(
         imageUrl,
         width: width,
         height: height,

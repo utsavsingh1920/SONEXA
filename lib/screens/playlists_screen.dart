@@ -35,12 +35,7 @@ class QueueScreen extends StatelessWidget {
                 // ========================================================
 
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    20,
-                    18,
-                    20,
-                    10,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
                   child: Row(
                     children: [
                       // BACK BUTTON
@@ -53,11 +48,8 @@ class QueueScreen extends StatelessWidget {
                           height: 42,
                           decoration: BoxDecoration(
                             color: const Color(0xFF17131F),
-                            borderRadius:
-                                BorderRadius.circular(14),
-                            border: Border.all(
-                              color: const Color(0xFF292231),
-                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: const Color(0xFF292231)),
                           ),
                           child: const Icon(
                             Icons.arrow_back_rounded,
@@ -83,9 +75,7 @@ class QueueScreen extends StatelessWidget {
                       ),
 
                       // RIGHT SIDE SPACE
-                      const SizedBox(
-                        width: 42,
-                      ),
+                      const SizedBox(width: 42),
                     ],
                   ),
                 ),
@@ -93,14 +83,8 @@ class QueueScreen extends StatelessWidget {
                 // ========================================================
                 // QUEUE INFO
                 // ========================================================
-
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    22,
-                    12,
-                    22,
-                    18,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(22, 12, 22, 18),
                   child: Row(
                     children: [
                       const Icon(
@@ -126,46 +110,32 @@ class QueueScreen extends StatelessWidget {
                 // ========================================================
                 // QUEUE LIST
                 // ========================================================
-
                 Expanded(
                   child: queue.isEmpty
                       ? _emptyQueue()
                       : ListView.builder(
-                          physics:
-                              const BouncingScrollPhysics(),
-                          padding:
-                              const EdgeInsets.fromLTRB(
-                            18,
-                            0,
-                            18,
-                            30,
-                          ),
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(18, 0, 18, 30),
                           itemCount: queue.length,
-                          itemBuilder:
-                              (context, index) {
-                            final SongModel song =
-                                queue[index];
+                          itemBuilder: (context, index) {
+                            final SongModel song = queue[index];
 
                             // ==================================================
                             // CURRENT SONG
                             // ==================================================
 
                             final bool isCurrent =
-                                player.currentSongData.id ==
-                                    song.id;
+                                player.currentSongData.id == song.id;
 
                             return _QueueSongItem(
                               song: song,
                               index: index,
                               isCurrent: isCurrent,
-                              isPlaying:
-                                  isCurrent &&
-                                  player.isPlaying,
+                              isPlaying: isCurrent && player.isPlaying,
 
                               // ==================================================
                               // PLAY SONG
                               // ==================================================
-
                               onTap: () {
                                 player.playQueueSong(song);
                               },
@@ -190,11 +160,7 @@ class QueueScreen extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.queue_music_rounded,
-            color: Color(0xFF514A5C),
-            size: 55,
-          ),
+          Icon(Icons.queue_music_rounded, color: Color(0xFF514A5C), size: 55),
 
           SizedBox(height: 14),
 
@@ -211,10 +177,7 @@ class QueueScreen extends StatelessWidget {
 
           Text(
             'Add songs to start playing',
-            style: TextStyle(
-              color: Color(0xFF777080),
-              fontSize: 12,
-            ),
+            style: TextStyle(color: Color(0xFF777080), fontSize: 12),
           ),
         ],
       ),
@@ -248,16 +211,11 @@ class _QueueSongItem extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         height: 76,
-        margin: const EdgeInsets.only(
-          bottom: 9,
-        ),
+        margin: const EdgeInsets.only(bottom: 9),
         padding: const EdgeInsets.all(9),
         decoration: BoxDecoration(
-          color: isCurrent
-              ? const Color(0xFF1C122A)
-              : const Color(0xFF12101A),
-          borderRadius:
-              BorderRadius.circular(17),
+          color: isCurrent ? const Color(0xFF1C122A) : const Color(0xFF12101A),
+          borderRadius: BorderRadius.circular(17),
           border: Border.all(
             color: isCurrent
                 ? const Color(0xFF63349A)
@@ -266,8 +224,7 @@ class _QueueSongItem extends StatelessWidget {
           boxShadow: isCurrent
               ? [
                   BoxShadow(
-                    color: const Color(0xFF8B5CF6)
-                        .withValues(alpha: 0.08),
+                    color: const Color(0xFF8B5CF6).withValues(alpha: 0.08),
                     blurRadius: 14,
                     offset: const Offset(0, 4),
                   ),
@@ -307,28 +264,21 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // ARTWORK
             // ============================================================
-
             ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(13),
+              borderRadius: BorderRadius.circular(13),
               child: Image.asset(
                 song.imagePath,
                 width: 56,
                 height: 56,
                 fit: BoxFit.cover,
-                errorBuilder:
-                    (context, error, stackTrace) {
+                errorBuilder: (context, error, stackTrace) {
                   return Container(
                     width: 56,
                     height: 56,
-                    decoration:
-                        const BoxDecoration(
-                      gradient:
-                          LinearGradient(
-                        begin:
-                            Alignment.topLeft,
-                        end:
-                            Alignment.bottomRight,
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                         colors: [
                           Color(0xFFB77CFF),
                           Color(0xFF7138C8),
@@ -351,26 +301,21 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // SONG INFORMATION
             // ============================================================
-
             Expanded(
               child: Column(
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     song.title,
                     maxLines: 1,
-                    overflow:
-                        TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: isCurrent
                           ? const Color(0xFFD8B7FF)
                           : const Color(0xFFE7E3EB),
                       fontSize: 14,
-                      fontWeight:
-                          FontWeight.w700,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
 
@@ -379,13 +324,11 @@ class _QueueSongItem extends StatelessWidget {
                   Text(
                     song.artist,
                     maxLines: 1,
-                    overflow:
-                        TextOverflow.ellipsis,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Color(0xFF817A8D),
                       fontSize: 10.5,
-                      fontWeight:
-                          FontWeight.w500,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
@@ -395,11 +338,9 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // CURRENT PLAYING INDICATOR
             // ============================================================
-
             if (isPlaying)
               const Padding(
-                padding:
-                    EdgeInsets.only(right: 7),
+                padding: EdgeInsets.only(right: 7),
                 child: Icon(
                   Icons.volume_up_rounded,
                   color: Color(0xFFB77CFF),
@@ -410,7 +351,6 @@ class _QueueSongItem extends StatelessWidget {
             // ============================================================
             // MORE ICON
             // ============================================================
-
             const SizedBox(
               width: 34,
               height: 45,

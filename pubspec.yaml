@@ -39,6 +39,11 @@ dependencies:
   http: ^1.6.0
   connectivity_plus: ^7.3.2
 
+  # Persistent offline artwork cache and downloaded audio storage
+  cached_network_image: ^3.4.1
+  flutter_cache_manager: ^3.4.1
+  path_provider: ^2.1.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -53,9 +58,6 @@ flutter:
   
   assets:
     - assets/images/sonexa_logo.png
-    - assets/images/hero.logo.png
-    - assets/images/galaxy_hero.png
-    - assets/images/headphone_hero.png
     - assets/images/google_logo.png
     - assets/images/apple_logo.png
     - assets/images/greeting/

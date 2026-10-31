@@ -4,8 +4,7 @@ class NotificationsScreen extends StatefulWidget {
   const NotificationsScreen({super.key});
 
   @override
-  State<NotificationsScreen> createState() =>
-      _NotificationsScreenState();
+  State<NotificationsScreen> createState() => _NotificationsScreenState();
 }
 
 class _NotificationItem {
@@ -26,8 +25,7 @@ class _NotificationItem {
   }) : isRead = false;
 }
 
-class _NotificationsScreenState
-    extends State<NotificationsScreen> {
+class _NotificationsScreenState extends State<NotificationsScreen> {
   static const Color _purple = Color(0xFF9B6BFF);
 
   late List<_NotificationItem> _notifications;
@@ -41,32 +39,28 @@ class _NotificationsScreenState
         icon: Icons.music_note_rounded,
         iconColor: const Color(0xFFB45CFF),
         title: 'New music for you',
-        message:
-            'Discover fresh tracks based on your taste.',
+        message: 'Discover fresh tracks based on your taste.',
         time: 'Just now',
       ),
       _NotificationItem(
         icon: Icons.auto_awesome_rounded,
         iconColor: const Color(0xFFFFB45C),
         title: 'Your daily mix is ready',
-        message:
-            'We created a new mix for your listening mood.',
+        message: 'We created a new mix for your listening mood.',
         time: '10 min ago',
       ),
       _NotificationItem(
         icon: Icons.favorite_rounded,
         iconColor: const Color(0xFFFF5FA4),
         title: 'Liked songs',
-        message:
-            'Your favorite songs are waiting for you.',
+        message: 'Your favorite songs are waiting for you.',
         time: '1 hour ago',
       ),
       _NotificationItem(
         icon: Icons.trending_up_rounded,
         iconColor: const Color(0xFF5CB8FF),
         title: 'Trending now',
-        message:
-            'Check out the songs everyone is listening to.',
+        message: 'Check out the songs everyone is listening to.',
         time: '2 hours ago',
       ),
     ];
@@ -77,68 +71,44 @@ class _NotificationsScreenState
   }
 
   Color _background(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF07070D)
-        : const Color(0xFFF7F5FA);
+    return _isDark(context) ? const Color(0xFF07070D) : const Color(0xFFF7F5FA);
   }
 
   Color _appBarColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF07070D)
-        : const Color(0xFFF7F5FA);
+    return _isDark(context) ? const Color(0xFF07070D) : const Color(0xFFF7F5FA);
   }
 
   Color _cardColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF111017)
-        : Colors.white;
+    return _isDark(context) ? const Color(0xFF111017) : Colors.white;
   }
 
   Color _borderColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF29232F)
-        : const Color(0xFFE3DDEB);
+    return _isDark(context) ? const Color(0xFF29232F) : const Color(0xFFE3DDEB);
   }
 
   Color _primaryText(BuildContext context) {
-    return _isDark(context)
-        ? Colors.white
-        : const Color(0xFF18151D);
+    return _isDark(context) ? Colors.white : const Color(0xFF18151D);
   }
 
   Color _secondaryText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF8B8494)
-        : const Color(0xFF6F6878);
+    return _isDark(context) ? const Color(0xFF8B8494) : const Color(0xFF6F6878);
   }
 
   Color _timeText(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF655E6E)
-        : const Color(0xFF928B9D);
+    return _isDark(context) ? const Color(0xFF655E6E) : const Color(0xFF928B9D);
   }
 
-  Color _iconBackground(
-    BuildContext context,
-    Color iconColor,
-  ) {
-    return iconColor.withValues(
-      alpha: _isDark(context) ? 0.12 : 0.10,
-    );
+  Color _iconBackground(BuildContext context, Color iconColor) {
+    return iconColor.withValues(alpha: _isDark(context) ? 0.12 : 0.10);
   }
 
   Color _snackBarColor(BuildContext context) {
-    return _isDark(context)
-        ? const Color(0xFF21182C)
-        : const Color(0xFF6D3DB8);
+    return _isDark(context) ? const Color(0xFF21182C) : const Color(0xFF6D3DB8);
   }
 
   int get _unreadCount {
     return _notifications
-        .where(
-          (_NotificationItem notification) =>
-              !notification.isRead,
-        )
+        .where((_NotificationItem notification) => !notification.isRead)
         .length;
   }
 
@@ -154,9 +124,7 @@ class _NotificationsScreenState
     });
 
     _showMessage(
-      wasRead
-          ? 'Notification marked as unread'
-          : 'Notification marked as read',
+      wasRead ? 'Notification marked as unread' : 'Notification marked as read',
     );
   }
 
@@ -165,8 +133,7 @@ class _NotificationsScreenState
       return;
     }
 
-    final _NotificationItem removed =
-        _notifications[index];
+    final _NotificationItem removed = _notifications[index];
 
     setState(() {
       _notifications.removeAt(index);
@@ -178,10 +145,7 @@ class _NotificationsScreenState
       SnackBar(
         content: const Text(
           'Notification deleted',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
         ),
         backgroundColor: _snackBarColor(context),
         behavior: SnackBarBehavior.floating,
@@ -195,16 +159,9 @@ class _NotificationsScreenState
             }
 
             setState(() {
-              final int insertIndex =
-                  index.clamp(
-                0,
-                _notifications.length,
-              );
+              final int insertIndex = index.clamp(0, _notifications.length);
 
-              _notifications.insert(
-                insertIndex,
-                removed,
-              );
+              _notifications.insert(insertIndex, removed);
             });
           },
         ),
@@ -218,27 +175,21 @@ class _NotificationsScreenState
     }
 
     final bool hasUnread = _notifications.any(
-      (_NotificationItem notification) =>
-          !notification.isRead,
+      (_NotificationItem notification) => !notification.isRead,
     );
 
     if (!hasUnread) {
-      _showMessage(
-        'All notifications are already read',
-      );
+      _showMessage('All notifications are already read');
       return;
     }
 
     setState(() {
-      for (final _NotificationItem notification
-          in _notifications) {
+      for (final _NotificationItem notification in _notifications) {
         notification.isRead = true;
       }
     });
 
-    _showMessage(
-      'All notifications marked as read',
-    );
+    _showMessage('All notifications marked as read');
   }
 
   Future<void> _clearAll() async {
@@ -246,16 +197,13 @@ class _NotificationsScreenState
       return;
     }
 
-    final bool? confirmed =
-        await showDialog<bool>(
+    final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
         final bool dark = _isDark(dialogContext);
 
         return AlertDialog(
-          backgroundColor: dark
-              ? const Color(0xFF17131F)
-              : Colors.white,
+          backgroundColor: dark ? const Color(0xFF17131F) : Colors.white,
           surfaceTintColor: Colors.transparent,
           title: Text(
             'Clear all notifications?',
@@ -292,10 +240,7 @@ class _NotificationsScreenState
               },
               child: const Text(
                 'Clear',
-                style: TextStyle(
-                  color: _purple,
-                  fontWeight: FontWeight.w800,
-                ),
+                style: TextStyle(color: _purple, fontWeight: FontWeight.w800),
               ),
             ),
           ],
@@ -342,27 +287,19 @@ class _NotificationsScreenState
       return;
     }
 
-    final _NotificationItem notification =
-        _notifications[index];
+    final _NotificationItem notification = _notifications[index];
 
     showModalBottomSheet<void>(
       context: context,
       backgroundColor: _cardColor(context),
       isScrollControlled: false,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(24),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (BuildContext sheetContext) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              18,
-              12,
-              18,
-              20,
-            ),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -373,8 +310,7 @@ class _NotificationsScreenState
                     color: _isDark(sheetContext)
                         ? const Color(0xFF4A4353)
                         : const Color(0xFFD0C9D8),
-                    borderRadius:
-                        BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                 ),
                 const SizedBox(height: 18),
@@ -388,8 +324,7 @@ class _NotificationsScreenState
                           sheetContext,
                           notification.iconColor,
                         ),
-                        borderRadius:
-                            BorderRadius.circular(13),
+                        borderRadius: BorderRadius.circular(13),
                       ),
                       child: Icon(
                         notification.icon,
@@ -404,9 +339,7 @@ class _NotificationsScreenState
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: _primaryText(
-                            sheetContext,
-                          ),
+                          color: _primaryText(sheetContext),
                           fontSize: 14,
                           fontWeight: FontWeight.w800,
                         ),
@@ -415,28 +348,18 @@ class _NotificationsScreenState
                   ],
                 ),
                 const SizedBox(height: 14),
-                Divider(
-                  color: _borderColor(sheetContext),
-                  height: 1,
-                ),
+                Divider(color: _borderColor(sheetContext), height: 1),
                 const SizedBox(height: 6),
                 ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 2,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 2),
                   leading: Icon(
                     notification.isRead
-                        ? Icons
-                            .mark_email_unread_outlined
-                        : Icons
-                            .mark_email_read_outlined,
+                        ? Icons.mark_email_unread_outlined
+                        : Icons.mark_email_read_outlined,
                     color: _purple,
                   ),
                   title: Text(
-                    notification.isRead
-                        ? 'Mark as unread'
-                        : 'Mark as read',
+                    notification.isRead ? 'Mark as unread' : 'Mark as read',
                     style: TextStyle(
                       color: _primaryText(sheetContext),
                       fontWeight: FontWeight.w700,
@@ -448,10 +371,7 @@ class _NotificationsScreenState
                   },
                 ),
                 ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(
-                    horizontal: 2,
-                  ),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 2),
                   leading: const Icon(
                     Icons.delete_outline_rounded,
                     color: Color(0xFFFF5F6D),
@@ -481,8 +401,7 @@ class _NotificationsScreenState
       return;
     }
 
-    final _NotificationItem notification =
-        _notifications[index];
+    final _NotificationItem notification = _notifications[index];
 
     if (!notification.isRead) {
       setState(() {
@@ -490,9 +409,7 @@ class _NotificationsScreenState
       });
     }
 
-    _showMessage(
-      '${notification.title} opened',
-    );
+    _showMessage('${notification.title} opened');
   }
 
   @override
@@ -527,14 +444,10 @@ class _NotificationsScreenState
             if (unreadCount > 0) ...[
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 7,
-                  vertical: 3,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                 decoration: BoxDecoration(
                   color: _purple,
-                  borderRadius:
-                      BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
                   '$unreadCount',
@@ -551,10 +464,7 @@ class _NotificationsScreenState
         actions: [
           if (_notifications.isNotEmpty)
             PopupMenuButton<String>(
-              icon: Icon(
-                Icons.more_vert_rounded,
-                color: _primaryText(context),
-              ),
+              icon: Icon(Icons.more_vert_rounded, color: _primaryText(context)),
               color: _cardColor(context),
               onSelected: (String value) {
                 if (value == 'read') {
@@ -578,9 +488,7 @@ class _NotificationsScreenState
                         Text(
                           'Mark all as read',
                           style: TextStyle(
-                            color: _primaryText(
-                              menuContext,
-                            ),
+                            color: _primaryText(menuContext),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -600,9 +508,7 @@ class _NotificationsScreenState
                         Text(
                           'Clear all',
                           style: TextStyle(
-                            color: _primaryText(
-                              menuContext,
-                            ),
+                            color: _primaryText(menuContext),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -617,20 +523,12 @@ class _NotificationsScreenState
       body: _notifications.isEmpty
           ? _emptyState(context)
           : ListView(
-              physics:
-                  const BouncingScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                8,
-                16,
-                30,
-              ),
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 30),
               children: [
                 if (unreadCount > 0)
                   Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 10,
-                    ),
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: Text(
                       '$unreadCount unread notification'
                       '${unreadCount == 1 ? '' : 's'}',
@@ -641,19 +539,13 @@ class _NotificationsScreenState
                       ),
                     ),
                   ),
-                for (
-                  int index = 0;
-                  index < _notifications.length;
-                  index++
-                ) ...[
+                for (int index = 0; index < _notifications.length; index++) ...[
                   _notificationCard(
                     context: context,
                     index: index,
-                    notification:
-                        _notifications[index],
+                    notification: _notifications[index],
                   ),
-                  if (index !=
-                      _notifications.length - 1)
+                  if (index != _notifications.length - 1)
                     const SizedBox(height: 10),
                 ],
               ],
@@ -679,13 +571,10 @@ class _NotificationsScreenState
           decoration: BoxDecoration(
             color: _cardColor(context),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: _borderColor(context),
-            ),
+            border: Border.all(color: _borderColor(context)),
           ),
           child: Row(
-            crossAxisAlignment:
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Stack(
                 clipBehavior: Clip.none,
@@ -694,12 +583,8 @@ class _NotificationsScreenState
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: _iconBackground(
-                        context,
-                        notification.iconColor,
-                      ),
-                      borderRadius:
-                          BorderRadius.circular(12),
+                      color: _iconBackground(context, notification.iconColor),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       notification.icon,
@@ -729,40 +614,29 @@ class _NotificationsScreenState
               const SizedBox(width: 11),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      crossAxisAlignment:
-                          CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Text(
                             notification.title,
                             maxLines: 1,
-                            overflow:
-                                TextOverflow.ellipsis,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              color: _primaryText(
-                                context,
-                              ),
+                              color: _primaryText(context),
                               fontSize: 12.5,
-                              fontWeight:
-                                  FontWeight.w800,
+                              fontWeight: FontWeight.w800,
                             ),
                           ),
                         ),
                         const SizedBox(width: 5),
                         GestureDetector(
-                          onTap: () =>
-                              _showNotificationActions(
-                            index,
-                          ),
+                          onTap: () => _showNotificationActions(index),
                           child: Icon(
                             Icons.more_horiz_rounded,
-                            color: _secondaryText(
-                              context,
-                            ),
+                            color: _secondaryText(context),
                             size: 19,
                           ),
                         ),
@@ -780,10 +654,7 @@ class _NotificationsScreenState
                     const SizedBox(height: 5),
                     Text(
                       notification.time,
-                      style: TextStyle(
-                        color: _timeText(context),
-                        fontSize: 8,
-                      ),
+                      style: TextStyle(color: _timeText(context), fontSize: 8),
                     ),
                   ],
                 ),
@@ -800,8 +671,7 @@ class _NotificationsScreenState
       child: Padding(
         padding: const EdgeInsets.all(30),
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               width: 76,
@@ -844,35 +714,24 @@ class _NotificationsScreenState
                   _notifications = [
                     _NotificationItem(
                       icon: Icons.music_note_rounded,
-                      iconColor:
-                          const Color(0xFFB45CFF),
+                      iconColor: const Color(0xFFB45CFF),
                       title: 'New music for you',
-                      message:
-                          'Discover fresh tracks based on your taste.',
+                      message: 'Discover fresh tracks based on your taste.',
                       time: 'Just now',
                     ),
                   ];
                 });
               },
-              icon: const Icon(
-                Icons.refresh_rounded,
-                size: 17,
-              ),
+              icon: const Icon(Icons.refresh_rounded, size: 17),
               label: const Text(
                 'Refresh',
-                style: TextStyle(
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w700),
               ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: _purple,
-                side: BorderSide(
-                  color:
-                      _purple.withValues(alpha: 0.45),
-                ),
+                side: BorderSide(color: _purple.withValues(alpha: 0.45)),
                 shape: RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),

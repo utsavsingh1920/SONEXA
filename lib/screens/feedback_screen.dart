@@ -4,32 +4,18 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FeedbackScreen extends StatefulWidget {
-
   const FeedbackScreen({super.key});
 
   @override
-
-  State<FeedbackScreen> createState() =>
-
-      _FeedbackScreenState();
-
+  State<FeedbackScreen> createState() => _FeedbackScreenState();
 }
 
-class _FeedbackScreenState
+class _FeedbackScreenState extends State<FeedbackScreen> {
+  static const Color _purple = Color(0xFF913CFF);
 
-    extends State<FeedbackScreen> {
+  static const Color _lightPurple = Color(0xFFC575FF);
 
-  static const Color _purple =
-
-      Color(0xFF913CFF);
-
-  static const Color _lightPurple =
-
-      Color(0xFFC575FF);
-
-  final TextEditingController _feedbackController =
-
-      TextEditingController();
+  final TextEditingController _feedbackController = TextEditingController();
 
   int _rating = 0;
 
@@ -38,13 +24,10 @@ class _FeedbackScreenState
   static const String _feedbackStorageKey = 'sonexa_feedback_entries_v1';
 
   @override
-
   void dispose() {
-
     _feedbackController.dispose();
 
     super.dispose();
-
   }
 
   // ================================================================
@@ -81,11 +64,13 @@ class _FeedbackScreenState
       Navigator.of(context).pop();
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(
-          content: Text('Feedback saved on this device. Thank you!'),
-          behavior: SnackBarBehavior.floating,
-          duration: Duration(seconds: 2),
-        ));
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Feedback saved on this device. Thank you!'),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
     } catch (_) {
       if (!mounted) return;
       _showMessage('Could not save feedback. Please try again.');
@@ -94,45 +79,33 @@ class _FeedbackScreenState
     }
   }
 
-    // ================================================================
+  // ================================================================
 
   // MESSAGE
 
   // ================================================================
 
   void _showMessage(String message) {
-
     ScaffoldMessenger.of(context)
-
       ..hideCurrentSnackBar()
-
       ..showSnackBar(
-
         SnackBar(
-
           content: Text(message),
 
           behavior: SnackBarBehavior.floating,
 
           duration: const Duration(seconds: 2),
-
         ),
-
       );
-
   }
 
   @override
-
   Widget build(BuildContext context) {
-
     final theme = Theme.of(context);
 
     final colorScheme = theme.colorScheme;
 
-    final bool isDark =
-
-        theme.brightness == Brightness.dark;
+    final bool isDark = theme.brightness == Brightness.dark;
 
     final Color backgroundColor = isDark
         ? const Color(0xFF080710)
@@ -155,7 +128,6 @@ class _FeedbackScreenState
         : colorScheme.onSurface.withValues(alpha: 0.10);
 
     return Scaffold(
-
       backgroundColor: backgroundColor,
 
       // ============================================================
@@ -163,9 +135,7 @@ class _FeedbackScreenState
       // APP BAR
 
       // ============================================================
-
       appBar: AppBar(
-
         backgroundColor: backgroundColor,
 
         surfaceTintColor: Colors.transparent,
@@ -173,41 +143,30 @@ class _FeedbackScreenState
         elevation: 0,
 
         leading: IconButton(
-
           icon: Icon(
-
             Icons.arrow_back_ios_new_rounded,
 
             color: primaryText,
 
             size: 20,
-
           ),
 
           onPressed: () {
-
             Navigator.pop(context);
-
           },
-
         ),
 
         title: Text(
-
           'Send Feedback',
 
           style: TextStyle(
-
             color: primaryText,
 
             fontSize: 20,
 
             fontWeight: FontWeight.w700,
-
           ),
-
         ),
-
       ),
 
       // ============================================================
@@ -215,225 +174,116 @@ class _FeedbackScreenState
       // BODY
 
       // ============================================================
-
       body: SafeArea(
-
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
 
-          physics:
-
-              const BouncingScrollPhysics(),
-
-          padding: const EdgeInsets.fromLTRB(
-
-            16,
-
-            8,
-
-            16,
-
-            35,
-
-          ),
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 35),
 
           child: Column(
-
-            crossAxisAlignment:
-
-                CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
-
               // ======================================================
 
               // HEADER CARD
 
               // ======================================================
-
               Container(
-
                 width: double.infinity,
 
-                padding: const EdgeInsets.fromLTRB(
-
-                  20,
-
-                  24,
-
-                  20,
-
-                  23,
-
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 23),
 
                 decoration: BoxDecoration(
-
                   color: cardColor,
 
-                  borderRadius:
+                  borderRadius: BorderRadius.circular(24),
 
-                      BorderRadius.circular(24),
-
-                  border: Border.all(
-
-                    color: borderColor,
-
-                  ),
+                  border: Border.all(color: borderColor),
 
                   boxShadow: [
-
                     if (isDark)
-
                       BoxShadow(
-
-                        color: Colors.black
-
-                            .withValues(
-
-                          alpha: 0.18,
-
-                        ),
+                        color: Colors.black.withValues(alpha: 0.18),
 
                         blurRadius: 22,
 
-                        offset:
-
-                            const Offset(0, 8),
-
+                        offset: const Offset(0, 8),
                       ),
-
                   ],
-
                 ),
 
                 child: Column(
-
                   children: [
-
                     // ICON
 
                     Container(
-
                       width: 76,
 
                       height: 76,
 
                       decoration: BoxDecoration(
+                        color: _purple.withValues(alpha: 0.10),
 
-                        color: _purple.withValues(
-
-                          alpha: 0.10,
-
-                        ),
-
-                        borderRadius:
-
-                            BorderRadius.circular(
-
-                          23,
-
-                        ),
+                        borderRadius: BorderRadius.circular(23),
 
                         border: Border.all(
-
-                          color: _purple
-
-                              .withValues(
-
-                            alpha: 0.22,
-
-                          ),
-
+                          color: _purple.withValues(alpha: 0.22),
                         ),
 
                         boxShadow: [
-
                           BoxShadow(
-
-                            color: _purple
-
-                                .withValues(
-
-                              alpha: isDark
-
-                                  ? 0.16
-
-                                  : 0.08,
-
+                            color: _purple.withValues(
+                              alpha: isDark ? 0.16 : 0.08,
                             ),
 
                             blurRadius: 25,
-
                           ),
-
                         ],
-
                       ),
 
                       child: const Icon(
-
-                        Icons
-
-                            .feedback_outlined,
+                        Icons.feedback_outlined,
 
                         color: _lightPurple,
 
                         size: 36,
-
                       ),
-
                     ),
 
                     const SizedBox(height: 16),
 
                     Text(
-
                       'We value your feedback',
 
-                      textAlign:
-
-                          TextAlign.center,
+                      textAlign: TextAlign.center,
 
                       style: TextStyle(
-
                         color: primaryText,
 
                         fontSize: 20,
 
-                        fontWeight:
-
-                            FontWeight.w800,
-
+                        fontWeight: FontWeight.w800,
                       ),
-
                     ),
 
                     const SizedBox(height: 7),
 
                     Text(
-
                       'Help us make SONEXA better for you.',
 
-                      textAlign:
-
-                          TextAlign.center,
+                      textAlign: TextAlign.center,
 
                       style: TextStyle(
-
                         color: secondaryText,
 
                         fontSize: 13,
 
                         height: 1.4,
-
                       ),
-
                     ),
-
                   ],
-
                 ),
-
               ),
 
               const SizedBox(height: 28),
@@ -443,13 +293,10 @@ class _FeedbackScreenState
               // RATING
 
               // ======================================================
-
               Text(
-
                 'RATE YOUR EXPERIENCE',
 
                 style: TextStyle(
-
                   color: secondaryText,
 
                   fontSize: 12.5,
@@ -457,177 +304,89 @@ class _FeedbackScreenState
                   fontWeight: FontWeight.w700,
 
                   letterSpacing: 0.9,
-
                 ),
-
               ),
 
               const SizedBox(height: 10),
 
               Container(
-
                 width: double.infinity,
 
-                padding:
-
-                    const EdgeInsets.symmetric(
-
+                padding: const EdgeInsets.symmetric(
                   vertical: 18,
 
                   horizontal: 16,
-
                 ),
 
                 decoration: BoxDecoration(
-
                   color: cardColor,
 
-                  borderRadius:
+                  borderRadius: BorderRadius.circular(20),
 
-                      BorderRadius.circular(20),
-
-                  border: Border.all(
-
-                    color: borderColor,
-
-                  ),
-
+                  border: Border.all(color: borderColor),
                 ),
 
                 child: Column(
-
                   children: [
-
                     Text(
-
                       _rating == 0
-
                           ? 'How are you enjoying SONEXA?'
-
                           : _rating == 1
+                          ? 'We are sorry to hear that.'
+                          : _rating == 2
+                          ? 'We can do better.'
+                          : _rating == 3
+                          ? 'Thanks for your rating!'
+                          : _rating == 4
+                          ? 'Glad you like SONEXA!'
+                          : 'Awesome! Thank you! ❤️',
 
-                              ? 'We are sorry to hear that.'
-
-                              : _rating == 2
-
-                                  ? 'We can do better.'
-
-                                  : _rating == 3
-
-                                      ? 'Thanks for your rating!'
-
-                                      : _rating == 4
-
-                                          ? 'Glad you like SONEXA!'
-
-                                          : 'Awesome! Thank you! ❤️',
-
-                      textAlign:
-
-                          TextAlign.center,
+                      textAlign: TextAlign.center,
 
                       style: TextStyle(
-
                         color: primaryText,
 
                         fontSize: 13,
 
-                        fontWeight:
-
-                            FontWeight.w600,
-
+                        fontWeight: FontWeight.w600,
                       ),
-
                     ),
 
                     const SizedBox(height: 13),
 
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
 
-                      mainAxisAlignment:
+                      children: List.generate(5, (index) {
+                        final int star = index + 1;
 
-                          MainAxisAlignment.center,
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _rating = star;
+                            });
+                          },
 
-                      children: List.generate(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 5),
 
-                        5,
+                            child: Icon(
+                              star <= _rating
+                                  ? Icons.star_rounded
+                                  : Icons.star_border_rounded,
 
-                        (index) {
+                              color: star <= _rating
+                                  ? _lightPurple
+                                  : secondaryText.withValues(alpha: 0.45),
 
-                          final int star =
-
-                              index + 1;
-
-                          return GestureDetector(
-
-                            onTap: () {
-
-                              setState(() {
-
-                                _rating = star;
-
-                              });
-
-                            },
-
-                            child: Padding(
-
-                              padding:
-
-                                  const EdgeInsets
-
-                                      .symmetric(
-
-                                horizontal: 5,
-
-                              ),
-
-                              child: Icon(
-
-                                star <= _rating
-
-                                    ? Icons
-
-                                        .star_rounded
-
-                                    : Icons
-
-                                        .star_border_rounded,
-
-                                color:
-
-                                    star <= _rating
-
-                                        ? _lightPurple
-
-                                        : secondaryText
-
-                                            .withValues(
-
-                                            alpha:
-
-                                                0.45,
-
-                                          ),
-
-                                size: 34,
-
-                              ),
-
+                              size: 34,
                             ),
-
-                          );
-
-                        },
-
-                      ),
-
+                          ),
+                        );
+                      }),
                     ),
-
                   ],
-
                 ),
-
               ),
 
               const SizedBox(height: 28),
@@ -637,13 +396,10 @@ class _FeedbackScreenState
               // FEEDBACK
 
               // ======================================================
-
               Text(
-
                 'YOUR FEEDBACK',
 
                 style: TextStyle(
-
                   color: secondaryText,
 
                   fontSize: 12.5,
@@ -651,115 +407,65 @@ class _FeedbackScreenState
                   fontWeight: FontWeight.w700,
 
                   letterSpacing: 0.9,
-
                 ),
-
               ),
 
               const SizedBox(height: 10),
 
               Container(
-
                 width: double.infinity,
 
                 decoration: BoxDecoration(
-
                   color: cardColor,
 
-                  borderRadius:
+                  borderRadius: BorderRadius.circular(20),
 
-                      BorderRadius.circular(20),
-
-                  border: Border.all(
-
-                    color: borderColor,
-
-                  ),
-
+                  border: Border.all(color: borderColor),
                 ),
 
                 child: TextField(
-
-                  controller:
-
-                      _feedbackController,
+                  controller: _feedbackController,
 
                   maxLines: 7,
 
                   minLines: 5,
 
-                  textCapitalization:
-
-                      TextCapitalization.sentences,
+                  textCapitalization: TextCapitalization.sentences,
 
                   style: TextStyle(
-
                     color: primaryText,
 
                     fontSize: 13.5,
 
                     height: 1.5,
-
                   ),
 
-                  decoration:
-
-                      InputDecoration(
-
-                    hintText:
-
-                        'Tell us what you think about SONEXA...',
+                  decoration: InputDecoration(
+                    hintText: 'Tell us what you think about SONEXA...',
 
                     hintStyle: TextStyle(
-
-                      color: secondaryText
-
-                          .withValues(
-
-                        alpha: 0.65,
-
-                      ),
+                      color: secondaryText.withValues(alpha: 0.65),
 
                       fontSize: 13,
-
                     ),
 
                     border: InputBorder.none,
 
-                    contentPadding:
-
-                        const EdgeInsets.all(
-
-                      17,
-
-                    ),
-
+                    contentPadding: const EdgeInsets.all(17),
                   ),
-
                 ),
-
               ),
 
               const SizedBox(height: 10),
 
               Text(
-
                 'Your feedback helps us improve the app.',
 
                 style: TextStyle(
-
-                  color: secondaryText
-
-                      .withValues(
-
-                    alpha: 0.65,
-
-                  ),
+                  color: secondaryText.withValues(alpha: 0.65),
 
                   fontSize: 11,
-
                 ),
-
               ),
 
               const SizedBox(height: 28),
@@ -769,87 +475,46 @@ class _FeedbackScreenState
               // SEND BUTTON
 
               // ======================================================
-
               SizedBox(
-
                 width: double.infinity,
 
                 height: 54,
 
                 child: ElevatedButton(
-
                   onPressed: _sending ? null : _sendFeedback,
 
-                  style:
-
-                      ElevatedButton.styleFrom(
-
+                  style: ElevatedButton.styleFrom(
                     backgroundColor: _purple,
 
-                    foregroundColor:
-
-                        Colors.white,
+                    foregroundColor: Colors.white,
 
                     elevation: 0,
 
-                    shape:
-
-                        RoundedRectangleBorder(
-
-                      borderRadius:
-
-                          BorderRadius.circular(
-
-                        17,
-
-                      ),
-
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(17),
                     ),
-
                   ),
 
                   child: const Row(
-
-                    mainAxisAlignment:
-
-                        MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.center,
 
                     children: [
-
-                      Icon(
-
-                        Icons
-
-                            .send_rounded,
-
-                        size: 19,
-
-                      ),
+                      Icon(Icons.send_rounded, size: 19),
 
                       SizedBox(width: 9),
 
                       Text(
-
                         'Send Feedback',
 
                         style: TextStyle(
-
                           fontSize: 14,
 
-                          fontWeight:
-
-                              FontWeight.w700,
-
+                          fontWeight: FontWeight.w700,
                         ),
-
                       ),
-
                     ],
-
                   ),
-
                 ),
-
               ),
 
               const SizedBox(height: 16),
@@ -859,97 +524,51 @@ class _FeedbackScreenState
               // PRIVACY NOTE
 
               // ======================================================
-
               Container(
-
                 width: double.infinity,
 
-                padding:
-
-                    const EdgeInsets.all(15),
+                padding: const EdgeInsets.all(15),
 
                 decoration: BoxDecoration(
+                  color: _purple.withValues(alpha: isDark ? 0.055 : 0.045),
 
-                  color: _purple.withValues(
+                  borderRadius: BorderRadius.circular(16),
 
-                    alpha: isDark
-
-                        ? 0.055
-
-                        : 0.045,
-
-                  ),
-
-                  borderRadius:
-
-                      BorderRadius.circular(16),
-
-                  border: Border.all(
-
-                    color: _purple.withValues(
-
-                      alpha: 0.10,
-
-                    ),
-
-                  ),
-
+                  border: Border.all(color: _purple.withValues(alpha: 0.10)),
                 ),
 
                 child: Row(
-
-                  crossAxisAlignment:
-
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
 
                   children: [
-
                     const Icon(
-
-                      Icons
-
-                          .lightbulb_outline_rounded,
+                      Icons.lightbulb_outline_rounded,
 
                       color: _lightPurple,
 
                       size: 20,
-
                     ),
 
                     const SizedBox(width: 11),
 
                     Expanded(
-
                       child: Text(
-
                         'Have a suggestion, found a bug, '
-
                         'or simply want to tell us what '
-
                         'you love? We would love to hear '
-
                         'from you.',
 
                         style: TextStyle(
-
-                          color:
-
-                              secondaryText,
+                          color: secondaryText,
 
                           fontSize: 11.5,
 
                           height: 1.5,
-
                         ),
-
                       ),
-
                     ),
-
                   ],
-
                 ),
-
               ),
 
               const SizedBox(height: 30),
@@ -959,176 +578,83 @@ class _FeedbackScreenState
               // BRANDING
 
               // ======================================================
-
               Center(
-
                 child: Column(
-
                   children: [
-
                     Container(
-
                       width: 42,
 
                       height: 42,
 
-                      decoration:
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(13),
 
-                          BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF913CFF), Color(0xFF6B22CD)],
 
-                        borderRadius:
+                          begin: Alignment.topLeft,
 
-                            BorderRadius.circular(
-
-                          13,
-
+                          end: Alignment.bottomRight,
                         ),
-
-                        gradient:
-
-                            const LinearGradient(
-
-                          colors: [
-
-                            Color(0xFF913CFF),
-
-                            Color(0xFF6B22CD),
-
-                          ],
-
-                          begin:
-
-                              Alignment.topLeft,
-
-                          end: Alignment
-
-                              .bottomRight,
-
-                        ),
-
                       ),
 
                       child: ClipRRect(
-
-                        borderRadius:
-
-                            BorderRadius.circular(
-
-                          13,
-
-                        ),
+                        borderRadius: BorderRadius.circular(13),
 
                         child: Image.asset(
-
                           'assets/images/sonexa_logo.png',
 
                           fit: BoxFit.cover,
 
-                          errorBuilder: (
-
-                            context,
-
-                            error,
-
-                            stackTrace,
-
-                          ) {
-
+                          errorBuilder: (context, error, stackTrace) {
                             return const Icon(
+                              Icons.graphic_eq_rounded,
 
-                              Icons
-
-                                  .graphic_eq_rounded,
-
-                              color:
-
-                                  Colors.white,
+                              color: Colors.white,
 
                               size: 23,
-
                             );
-
                           },
-
                         ),
-
                       ),
-
                     ),
 
                     const SizedBox(height: 9),
 
                     Text(
-
                       'SONEXA',
 
                       style: TextStyle(
-
-                        color: primaryText
-
-                            .withValues(
-
-                          alpha: isDark
-
-                              ? 0.22
-
-                              : 0.25,
-
+                        color: primaryText.withValues(
+                          alpha: isDark ? 0.22 : 0.25,
                         ),
 
                         fontSize: 13,
 
-                        fontWeight:
-
-                            FontWeight.w800,
+                        fontWeight: FontWeight.w800,
 
                         letterSpacing: 2,
-
                       ),
-
                     ),
 
                     const SizedBox(height: 5),
 
                     Text(
-
                       'Your music. Your mood. Your sound.',
 
                       style: TextStyle(
-
-                        color:
-
-                            secondaryText
-
-                                .withValues(
-
-                          alpha: 0.65,
-
-                        ),
+                        color: secondaryText.withValues(alpha: 0.65),
 
                         fontSize: 10.5,
-
                       ),
-
                     ),
-
                   ],
-
                 ),
-
               ),
-
             ],
-
           ),
-
         ),
-
       ),
-
     );
-
   }
-
 }
-
